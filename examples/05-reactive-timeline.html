@@ -45,7 +45,7 @@
             /* Geometry */
             --width: 150px;
             --height: 150px;
-            --radius: 50%;
+            --radius: 75px; /* Half of the 150px width. 50% is invalid for <length> type. */
             
             /* Motion Logic: Moves from bottom (100vh) to top */
             --y: calc(50vh - (var(--progress) * 80vh));
