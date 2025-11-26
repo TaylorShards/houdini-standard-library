@@ -1,0 +1,123 @@
+/* ==========================================================================
+   HOUDINI STANDARD LIBRARY — v0.4.0
+   Exhaustive, typed, composable CSS variable engine.
+   Copyright (c) 2025 Taylor Shards. Licensed under MIT.
+   ========================================================================== */
+
+
+/* ========================================================================== */
+/* 1. SYSTEM INPUTS ("Nervous System") */
+/* -------------------------------------------------------------------------- */
+
+@property --scalar          { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-x        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-y        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-z        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+
+@property --state           { syntax: '<integer>';            initial-value: 0;   inherits: true; }
+@property --progress        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --seed            { syntax: '<integer>';            initial-value: 0;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 2. COLOR SYSTEM ("Paint Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --hue             { syntax: '<number>';             initial-value: 210; inherits: true; }
+@property --sat             { syntax: '<percentage>';         initial-value: 100%;inherits: true; }
+@property --lit             { syntax: '<percentage>';         initial-value: 50%; inherits: true; }
+@property --alpha           { syntax: '<number>';             initial-value: 1;  inherits: true; }
+
+/* Derived color controls */
+@property --warmth          { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --contrast        { syntax: '<number>';             initial-value: 1;   inherits: true; }
+@property --vibrance        { syntax: '<number>';             initial-value: 1;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 3. TRANSFORM / MOTION ("Physics Layer") */
+/*  - All NON-INHERITING — prevents cascading distortions */
+/* -------------------------------------------------------------------------- */
+
+/* Translation */
+@property --x               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+@property --y               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+@property --z               { syntax: '<length>';             initial-value: 0px; inherits: false; }
+
+/* Rotation */
+@property --rotate          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-x        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-y        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-z        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+
+/* Scaling */
+@property --scale           { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --scale-x         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --scale-y         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+
+/* Skew */
+@property --skew-x          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --skew-y          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+
+/* Velocity-like properties (great for reactive UI) */
+@property --vx              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --vy              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --vz              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Acceleration-like props */
+@property --ax              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --ay              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+
+/* ========================================================================== */
+/* 4. FILTERS / EFFECTS ("FX Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --opacity         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --blur            { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --brightness      { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --contrast-fx     { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --saturate        { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --grayscale       { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --hue-rotate      { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --invert          { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Shadows */
+@property --shadow-x        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-y        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-blur     { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-spread   { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-alpha    { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Glow (thematic, so it inherits) */
+@property --glow            { syntax: '<number>';             initial-value: 0;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 5. TYPOGRAPHY ("Voice Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --font-size       { syntax: '<length>';             initial-value: 1rem;inherits: true; }
+@property --font-weight     { syntax: '<number>';             initial-value: 400; inherits: true; }
+@property --letter-space    { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --line-height     { syntax: '<number>';             initial-value: 1.4; inherits: true; }
+
+/* Numerical counters */
+@property --int             { syntax: '<integer>';            initial-value: 0;   inherits: false; }
+@property --float           { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+
+/* ========================================================================== */
+/* 6. LAYOUT / GEOMETRY ("Shape Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --radius          { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --padding         { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --gap             { syntax: '<length>';             initial-value: 0px; inherits: true; }
+
+@property --width           { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --height          { syntax: '<length>';             initial-value: 0px; inherits: false; }
+
+/* Grids & 3D perspective */
+@property --columns         { syntax: '<integer>';            initial-value: 1;   inherits: true; }
+@property --perspective     { syntax: '<length>';             initial-value: 0px; inherits: true; }
