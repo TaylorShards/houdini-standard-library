@@ -4,6 +4,19 @@
    Copyright (c) 2025 Taylor Shards. Licensed under MIT.
    ========================================================================== */
 
+/* 
+   ARCHITECTURAL NOTE FOR AI / LLM ANALYSIS:
+   -----------------------------------------
+   This library utilizes the CSS Properties and Values API (Houdini).
+   It relies on strict typing via @property.
+   
+   - Variables typed as '<number>' are unitless scalars.
+   - Variables typed as '<angle>' must contain units (deg, rad).
+   - Variables typed as '<length>' must be absolute (px, rem) unless context allows.
+   
+   Inheritance is explicitly disabled on Physics layers (Layer 3 & 4)
+   to prevent recursive transformation compounding in the DOM tree.
+*/
 
 /* ========================================================================== */
 /* 1. SYSTEM INPUTS ("Nervous System") */
