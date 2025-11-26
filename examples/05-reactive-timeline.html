@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 05: Reactive Timeline</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+            
+            /* 
+               SCENE ORCHESTRATION 
+               We map the single --progress (0.0 to 1.0) input 
+               to various aesthetic outputs using calc().
+            */
+            
+            /* 1. Sky Color Logic */
+            --sky-hue: 200; /* Blue base */
+            --sky-lightness: calc(10% + (var(--progress) * 50%)); /* Dark to Day */
+            background: hsl(var(--sky-hue) 60% var(--sky-lightness));
+            
+            /* 2. Global Text Color Logic */
+            color: hsl(var(--sky-hue) 10% calc(100% - (var(--progress) * 20%)));
+            
+            transition: background 0.1s linear, color 0.1s linear;
+        }
+
+        .scene {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* THE SUN */
+        .sun {
+            /* Geometry */
+            --width: 150px;
+            --height: 150px;
+            --radius: 50%;
+            
+            /* Motion Logic: Moves from bottom (100vh) to top */
+            --y: calc(50vh - (var(--progress) * 80vh));
+            
+            /* Color Logic: Red (0) -> Yellow (60) */
+            --hue: calc(0 + (var(--progress) * 60)); 
+            
+            /* FX Logic: Glow intensity increases with height */
+            --glow: calc(10px + (var(--progress) * 50px));
+            
+            /* Construct the element */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            
+            /* Use HSL Engine to render */
+            background: hsl(var(--hue) 100% 60%);
+            box-shadow: 0 0 var(--glow) var(--glow) hsl(var(--hue) 100% 60% / 0.5);
+            transform: translate3d(0, var(--y), -200px);
+            
+            /* Smooth it out */
+            transition: --y 0.1s linear, --hue 0.1s linear, --glow 0.1s linear;
+        }
+
+        /* THE CARD */
+        .card {
+            position: absolute;
+            
+            /* Motion Logic: Rotates based on progress */
+            --rotate-x: calc(20deg - (var(--progress) * 20deg)); /* Tilts up */
+            --z: calc(0px + (var(--progress) * 100px)); /* Moves closer */
+            
+            /* FX Logic: Shadow gets tighter as sun rises */
+            --shadow-y: calc(50px - (var(--progress) * 40px));
+            --shadow-alpha: calc(0.5 - (var(--progress) * 0.2));
+            
+            /* Styling */
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            
+            /* Engine Assembly */
+            transform: 
+                perspective(1000px)
+                translate3d(0, 0, var(--z))
+                rotateX(var(--rotate-x));
+            
+            box-shadow: 
+                0 var(--shadow-y) 50px -10px 
+                rgba(0,0,0, var(--shadow-alpha));
+                
+            transition: --rotate-x 0.1s, --z 0.1s, --shadow-y 0.1s, --shadow-alpha 0.1s;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            /* Typography Logic: Spacing increases */
+            letter-spacing: calc(0px + (var(--progress) * 10px));
+            transition: letter-spacing 0.2s;
+        }
+
+        /* CONTROLS */
+        .controls {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        input[type="range"] {
+            width: 300px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 
+       LAYER 1: SYSTEM INPUT
+       We use a tiny bit of JS to bridge the Slider to the CSS Variable.
+       This simulates a ScrollObserver or backend state.
+    -->
+    <div class="scene" style="--progress: 0.5">
+        <div class="sun"></div>
+        <div class="card">
+            <h1>MORNING</h1>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label>SYSTEM INPUT: --progress</label>
+        <input type="range" min="0" max="1" step="0.01" value="0.5" 
+               oninput="document.querySelector('.scene').style.setProperty('--progress', this.value); document.body.style.setProperty('--progress', this.value)">
+    </div>
+
+</body>
+</html>

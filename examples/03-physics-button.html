@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 03: Physics Button</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #e0e5ec;
+            font-family: system-ui, sans-serif;
+        }
+
+        /* 
+           THE ARCHITECTURE 
+           We build the "Physics Rig" once.
+           Now this element is listening to all motion channels simultaneously.
+        */
+        .physics-btn {
+            /* 1. Base Dimensions */
+            --width: 200px;
+            --height: 80px;
+            
+            /* 2. The Rig (Connecting variables to the engine) */
+            transform: 
+                translate3d(var(--x), var(--y), var(--z))
+                rotateX(var(--rotate-x))
+                rotateY(var(--rotate-y))
+                rotateZ(var(--rotate-z))
+                scale3d(var(--scale), var(--scale), var(--scale));
+            
+            /* 3. The Transitions */
+            /* We transition the VARIABLES, not the transform property */
+            transition: 
+                --scale 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                --rotate-z 0.1s linear,
+                --y 0.1s linear,
+                --shadow-y 0.2s ease,
+                --shadow-blur 0.2s ease;
+
+            /* Visual Styling */
+            width: var(--width);
+            height: var(--height);
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            
+            /* Shadow using HSL shadow vars */
+            box-shadow: 
+                var(--shadow-x) 
+                var(--shadow-y) 
+                var(--shadow-blur) 
+                var(--shadow-spread) 
+                rgba(0,0,0, 0.3);
+        }
+
+        /* 
+           THE INTERACTION
+           Notice we don't mention 'transform' ever again.
+           We just update data.
+        */
+
+        /* State: Hover (Grow & Float) */
+        .physics-btn:hover {
+            --scale: 1.1;
+            --y: -5px;
+            --shadow-y: 15px;
+            --shadow-blur: 20px;
+        }
+
+        /* State: Active (Click & Tilt) */
+        .physics-btn:active {
+            --scale: 0.95;
+            --y: 2px;
+            --rotate-z: -3deg; /* The tilt! */
+            --shadow-y: 2px;
+            --shadow-blur: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <button class="physics-btn">
+        Click Me
+    </button>
+
+</body>
+</html>
