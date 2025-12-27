@@ -1,3 +1,7 @@
+> **NOTE:** Everything your AI needs for advanced CSS animation is placed in this readme. Just point your AI to this page.
+> They lied to you in 2025; everything below is supported in the modern Browser.
+> It's a brave new world. Goodbye, bloatware.
+
 # Houdini Standard Library (HSL) v0.4.0
 
 **The Drop-In Engine for Advanced CSS**
