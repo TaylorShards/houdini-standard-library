@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HSL Example: Synchronized Prismatic Crossing</title>
+  <style>
+/* ==========================================================================
+   HOUDINI STANDARD LIBRARY — v0.4.0
+   Exhaustive, typed, composable CSS variable engine.
+   Copyright (c) 2025 Taylor Shards. Licensed under MIT.
+   ========================================================================== */
+
+/* 1. SYSTEM INPUTS ("Nervous System") */
+@property --scalar          { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --state           { syntax: '<integer>';            initial-value: 0;   inherits: true; }
+
+/* 2. COLOR SYSTEM ("Paint Layer") */
+@property --hue             { syntax: '<number>';             initial-value: 210; inherits: true; }
+@property --sat             { syntax: '<percentage>';         initial-value: 100%;inherits: true; }
+@property --lit             { syntax: '<percentage>';         initial-value: 50%; inherits: true; }
+
+/* 3. TRANSFORM / MOTION ("Physics Layer") */
+@property --x               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+@property --y               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+
+/* 4. FILTERS / EFFECTS ("FX Layer") */
+@property --opacity         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+
+
+/* ==========================================================================
+   EXAMPLE DEMO CODE
+   ========================================================================== */
+
+@layer base, demo;
+
+@layer base {
+  * { box-sizing: border-box; }
+  
+  :root {
+    color-scheme: light dark;
+    --bg-dark: rgb(16, 24, 40);
+    --bg-light: rgb(248, 244, 238);
+    --txt-light: rgb(10, 10, 10);
+    --txt-dark: rgb(245, 245, 245);
+    --line-light: rgba(0, 0, 0, 0.25);
+    --line-dark: rgba(255, 255, 255, 0.25);
+    
+    --clr-bg: light-dark(var(--bg-light), var(--bg-dark));
+    --clr-txt: light-dark(var(--txt-light), var(--txt-dark));
+    --clr-lines: light-dark(var(--line-light), var(--line-dark));
+  }
+ 
+  body {
+    background-color: var(--clr-bg);
+    color: var(--clr-txt);
+    min-height: 100svh;
+    margin: 0;
+    padding: 2rem;
+    font-family: system-ui, -apple-system, sans-serif;
+    display: grid;
+    place-items: center;
+    overflow: hidden; /* Prevent edge scrolling */
+  }
+}
+
+@layer demo {
+  .wrapper {
+    /* 
+       FIX: Changed vw to vmin so the circle never exceeds screen height. 
+       70vmin = 70% of the smallest screen dimension.
+    */
+    --circle-size: 70vmin;
+    --dot-size: 4vmin;
+    --duration: 3s;
+    
+    border-radius: 50%;
+    border: 1px solid var(--clr-lines);
+    width: var(--circle-size);
+    aspect-ratio: 1;
+    position: relative;
+    
+    div {
+      --count: sibling-count();
+      --i: calc(sibling-index() - 1);
+      
+      @supports not (selector(:sibling-index(0))) { 
+        --count: 13;
+        &:nth-child(1)  { --i: 0; }
+        &:nth-child(2)  { --i: 1; }
+        &:nth-child(3)  { --i: 2; }
+        &:nth-child(4)  { --i: 3; }
+        &:nth-child(5)  { --i: 4; }
+        &:nth-child(6)  { --i: 5; }
+        &:nth-child(7)  { --i: 6; }
+        &:nth-child(8)  { --i: 7; }
+        &:nth-child(9)  { --i: 8; }
+        &:nth-child(10) { --i: 9; }
+        &:nth-child(11) { --i: 10; }
+        &:nth-child(12) { --i: 11; }
+        &:nth-child(13) { --i: 12; }
+      }
+      
+      --delay: calc(var(--i) * (var(--duration) / var(--count)));
+      --angle: calc(360deg / var(--count) * var(--i));
+      --radius: calc(var(--circle-size) / 2);
+      --diameter: calc(var(--radius) * 2);
+
+      position: absolute;
+      width: var(--dot-size);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      
+      /* 
+         DYNAMIC HSL COLOR INJECTION:
+         Calculate a unique hue for each dot based on its index.
+      */
+      --hue: calc((360 / var(--count)) * var(--i));
+      --sat: 85%;
+      --lit: 60%;
+      background: hsl(var(--hue), var(--sat), var(--lit));
+      
+      /* Statically position the dots along the perimeter */
+      offset-anchor: 50% 50%;
+      offset-path: circle(var(--radius) at 50% 50%);
+      offset-distance: calc(var(--i) / var(--count) * 100%);
+      offset-rotate: 0deg;
+
+      /* Bind typed HSL variables to hardware-accelerated properties */
+      --opacity: 0;
+      opacity: var(--opacity);
+      translate: var(--x) var(--y);
+
+      animation-name: --cross, --fade-in;
+      animation-duration: var(--duration);
+      animation-timing-function: ease-in-out;
+      animation-fill-mode: both, forwards;
+      animation-iteration-count: infinite, 1;
+      animation-delay: var(--delay), calc(var(--duration) / 2 * var(--i) + var(--delay));
+
+      /* Tracking node (First child pulses white) */
+      &:first-child {
+        background: white;
+        box-shadow: 0 0 1.5vmin rgba(255, 255, 255, 0.8);
+        z-index: 2; /* Keep it visible over other dots */
+      }
+    }
+  }
+
+  @keyframes --cross {
+    50% {
+      --x: calc(cos(var(--angle)) * -1 * var(--diameter));
+      --y: calc(sin(var(--angle)) * -1 * var(--diameter));
+    }
+  }
+
+  @keyframes --fade-in {
+    0%, 4%   { --opacity: 0; }
+    5%, 100% { --opacity: 1; }
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+</body>
+</html>
