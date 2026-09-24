@@ -1,4 +1,4 @@
-# Houdini Standard Library (HSL) v0.4.0
+# Houdini Standard Library (HSL) v0.5.0
 
 **The Drop-In Engine for Advanced CSS**
 A typed, composable, animation-ready CSS variable engine.
@@ -16,9 +16,9 @@ Specifically, this is an implementation of the **CSS Properties and Values API**
 
 ---
 
-### Browser Support (Baseline 2025)
+### Browser Support (Baseline 2026)
 
-This library relies on the **CSS Properties and Values API**, which is now universally supported in all evergreen browsers. No polyfills are required.
+This library relies on the **CSS Properties and Values API**, which is universally supported in all evergreen browsers. The new **Time** and **Anchor** layers (added in v0.5.0) are fully supported by these baselines.
 
 | Browser | Version | Support Status |
 | :--- | :--- | :--- |
@@ -51,9 +51,9 @@ This is your engine.
 
 ```css
 /* ==========================================================================
-   HOUDINI STANDARD LIBRARY — v0.4.0
+   HOUDINI STANDARD LIBRARY — v0.5.0
    Exhaustive, typed, composable CSS variable engine.
-   Copyright (c) 2025 Taylor Shards. Licensed under MIT.
+   Copyright (c) 2026 Taylor Shards. Licensed under MIT.
    ========================================================================== */
 
 /* 
@@ -69,7 +69,6 @@ This is your engine.
    Inheritance is explicitly disabled on Physics layers (Layer 3 & 4)
    to prevent recursive transformation compounding in the DOM tree.
 */
-
 
 /* ========================================================================== */
 /* 1. SYSTEM INPUTS ("Nervous System") */
@@ -177,7 +176,7 @@ This is your engine.
 /* 6. LAYOUT / GEOMETRY ("Shape Layer") */
 /* -------------------------------------------------------------------------- */
 
-@property --radius          { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --radius          { syntax: '<length-percentage>';  initial-value: 0px; inherits: true; }
 @property --padding         { syntax: '<length>';             initial-value: 0px; inherits: true; }
 @property --gap             { syntax: '<length>';             initial-value: 0px; inherits: true; }
 
@@ -187,6 +186,27 @@ This is your engine.
 /* Grids & 3D perspective */
 @property --columns         { syntax: '<integer>';            initial-value: 1;   inherits: true; }
 @property --perspective     { syntax: '<length>';             initial-value: 0px; inherits: true; }
+
+
+/* ========================================================================== */
+/* 7. TEMPORAL SYSTEM ("Time Layer") */
+/*    Essential for controlling animation speed and pacing. */
+/* -------------------------------------------------------------------------- */
+
+@property --duration        { syntax: '<time>';               initial-value: 0s;  inherits: false; }
+@property --delay           { syntax: '<time>';               initial-value: 0s;  inherits: false; }
+/* Note: Easing functions (cubic-bezier) cannot yet be strictly typed via @property 
+   in 2026. Use keywords or string fallbacks if necessary. */
+
+
+/* ========================================================================== */
+/* 8. ANCHOR / PIVOT ("Origin Layer") */
+/*    Controls the axis of rotation and scaling. */
+/* -------------------------------------------------------------------------- */
+
+@property --origin-x        { syntax: '<length-percentage>';  initial-value: 50%; inherits: false; }
+@property --origin-y        { syntax: '<length-percentage>';  initial-value: 50%; inherits: false; }
+@property --origin-z        { syntax: '<length>';             initial-value: 0px; inherits: false; }
 ```
 
 ---

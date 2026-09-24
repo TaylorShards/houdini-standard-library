@@ -1,0 +1,2229 @@
+The user is providing you with the complete repo and source code for a project, contained in a single file.
+
+A file tree is provided below. The subsequent sections contain the full content of each file, clearly marked with a file header.
+
+## Project File Tree
+
+```
+houdini-standard-css/
+├── [2.7KB] ARCHITECTURE.md
+├── [1.0KB] LICENSE
+├── [11.4KB] README.md
+├── [5.3KB] REFERENCE.md
+├── examples
+│   ├── [2.6KB] 01-interpolated-gradient.html
+│   ├── [2.6KB] 02-integer-counter.html
+│   ├── [2.7KB] 03-physics-button.html
+│   ├── [4.0KB] 04-cinematic-card.html
+│   ├── [4.9KB] 05-reactive-timeline.1.html
+│   ├── [7.4KB] 05-reactive-timeline.2.html
+│   ├── [5.8KB] 05-reactive-timeline.3.html
+│   ├── [6.2KB] 05-reactive-timeline.4.html
+│   ├── [4.9KB] 05-reactive-timeline.html
+│   ├── [4.2KB] 06-time-and-origin.html
+│   └── [2.2KB] README.md
+└── [9.2KB] houdini.css
+```
+
+---
+
+### **FILE:** `ARCHITECTURE.md`
+````
+# Architecture & Design Decisions
+
+## 1. The Core Philosophy: "Engine vs. Component"
+Most CSS frameworks (Bootstrap, Tailwind) provide **Components** (classes that look like buttons).
+HSL provides an **Engine** (typed variables that behave like physics).
+
+**Decision:** We do not provide `.btn` classes. We provide `--scale` and `--hue`.
+**Reasoning:** This allows the library to be agnostic to the design system. It is infrastructure, not UI.
+
+## 2. Type Strictness & The "Union" Syntax
+Standard CSS is loosely typed. HSL is strictly typed using `@property`.
+
+**Evolution (v0.5.0):** Early versions of strict CSS struggled with mixed units (e.g., `<length>` rejecting `<percentage>`).
+**Solution:** This engine utilizes **Union Syntax** (e.g., `<length-percentage>`) for geometry and positioning.
+*   **Result:** Variables like `--radius` or `--x` accept both absolute units (`px`, `rem`) and relative units (`%`).
+*   **Implication:** Developers get the safety of strict typing (preventing string injection) without losing the flexibility of responsive fluid geometry.
+
+## 3. Inheritance Model (The "Nervous System" vs "Physics")
+We separate variables into two categories based on inheritance:
+
+*   **Inheriting (Theme Data):** Color (`--hue`), Typography (`--font-size`), and State (`--progress`) must flow down the DOM tree so children match their parents.
+*   **Non-Inheriting (Physics Data):** Transform vectors (`--x`, `--rotate`, `--scale`) must **NOT** inherit.
+    *   *Why?* If `--scale: 1.1` inherited, a button inside a card would scale *twice* (1.1 * 1.1 = 1.21).
+    *   *Correction:* By setting `inherits: false`, we ensure physics applied to a parent does not distort the child.
+
+## 4. The Pipeline Model
+The library is designed to function as a unidirectional data pipeline:
+1.  **Input:** Javascript/User sets scalar values (`--progress`, `--scalar`).
+2.  **Logic:** CSS `calc()` derives visual values (Input * Multiplier).
+3.  **Output:** The browser renders the pixel.
+
+This moves state management from the JavaScript thread to the CSS Compositor thread.
+
+## 5. The "Keyword Sacrifice" (Interpolation vs. Convenience)
+In v0.5.0, the decision was made to prefer **Mathematical Correctness** over **Authoring Convenience**.
+
+**Decision:** We use strict union types (`<length-percentage>`) for geometry and anchors.
+**Trade-off:** This explicitly disables CSS keywords.
+*   `--origin-x: center` is **INVALID**.
+*   `--origin-x: 50%` is **VALID**.
+**Reasoning:** Keywords cannot be mathematically interpolated by the compositor (you cannot tween from `0px` to `center`). By forcing numeric inputs (`%`, `px`, `rem`), we guarantee that every variable in the engine is 60fps-animation-ready, eliminating "snap" glitches during state changes.
+````
+
+### **FILE:** `LICENSE`
+````
+MIT License
+
+Copyright (c) 2025 Taylor Shards.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+````
+
+### **FILE:** `README.md`
+````
+# Houdini Standard Library (HSL) v0.5.0
+
+**The Drop-In Engine for Advanced CSS**
+A typed, composable, animation-ready CSS variable engine.
+
+---
+
+### Nomenclature & Disambiguation
+
+**First, a necessary distinction.** In the tech world, "Houdini" refers to two different things:
+1.  **SideFX Houdini:** The procedural 3D animation software used in VFX.
+2.  **CSS Houdini:** The W3C browser standard that exposes the browser's rendering engine.
+
+**This project is #2.**
+Specifically, this is an implementation of the **CSS Properties and Values API**. It is a definition file for "supercharged" CSS variables, enforcing types, defaults, and inheritance rules directly within the browser’s styling engine.
+
+---
+
+### Browser Support (Baseline 2026)
+
+This library relies on the **CSS Properties and Values API**, which is universally supported in all evergreen browsers. The new **Time** and **Anchor** layers (added in v0.5.0) are fully supported by these baselines.
+
+| Browser | Version | Support Status |
+| :--- | :--- | :--- |
+| **Chrome / Edge** | 85+ | Native Support (Since 2020) |
+| **Safari** | 16.4+ | Native Support (Since 2023) |
+| **Firefox** | 128+ | Native Support (Since 2024) |
+
+*Note: This engine is designed for modern rendering pipelines. It does not provide fallbacks for legacy environments.*
+
+---
+
+### Philosophy: "All Primitives, No Training Wheels"
+
+You want the library. Not guardrails. Not compatibility talk. Not fallback code.
+
+This library provides **the bleeding-edge, Houdini-powered, future-leaning CSS Standard Library**. It is the exhaustive, primitives-first vocabulary for the modern web engineer.
+
+**Design Principles:**
+*   **Exhaustive:** Every primitive you need (motion, color, geometry, filters, physics, type).
+*   **Typed:** Everything uses `@property` with strict CSS Values API syntax (e.g., `<angle>` vs `<number>`).
+*   **Correct Model:** Theme data inherits; physics data does not.
+*   **Pure:** No JavaScript registration required. Just CSS.
+
+---
+
+### Installation
+
+Paste the following block into your global `app.css` or `reset.css`.
+This is your engine.
+
+```css
+/* ==========================================================================
+   HOUDINI STANDARD LIBRARY — v0.5.0
+   Exhaustive, typed, composable CSS variable engine.
+   Copyright (c) 2026 Taylor Shards. Licensed under MIT.
+   ========================================================================== */
+
+/* 
+   ARCHITECTURAL NOTE FOR AI / LLM ANALYSIS:
+   -----------------------------------------
+   This library utilizes the CSS Properties and Values API (Houdini).
+   It relies on strict typing via @property.
+   
+   - Variables typed as '<number>' are unitless scalars.
+   - Variables typed as '<angle>' must contain units (deg, rad).
+   - Variables typed as '<length>' must be absolute (px, rem) unless context allows.
+   
+   Inheritance is explicitly disabled on Physics layers (Layer 3 & 4)
+   to prevent recursive transformation compounding in the DOM tree.
+*/
+
+/* ========================================================================== */
+/* 1. SYSTEM INPUTS ("Nervous System") */
+/* -------------------------------------------------------------------------- */
+
+@property --scalar          { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-x        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-y        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-z        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+
+@property --state           { syntax: '<integer>';            initial-value: 0;   inherits: true; }
+@property --progress        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --seed            { syntax: '<integer>';            initial-value: 0;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 2. COLOR SYSTEM ("Paint Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --hue             { syntax: '<number>';             initial-value: 210; inherits: true; }
+@property --sat             { syntax: '<percentage>';         initial-value: 100%;inherits: true; }
+@property --lit             { syntax: '<percentage>';         initial-value: 50%; inherits: true; }
+@property --alpha           { syntax: '<number>';             initial-value: 1;  inherits: true; }
+
+/* Derived color controls */
+@property --warmth          { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --contrast        { syntax: '<number>';             initial-value: 1;   inherits: true; }
+@property --vibrance        { syntax: '<number>';             initial-value: 1;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 3. TRANSFORM / MOTION ("Physics Layer") */
+/*  - All NON-INHERITING — prevents cascading distortions */
+/* -------------------------------------------------------------------------- */
+
+/* Translation */
+@property --x               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+@property --y               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+@property --z               { syntax: '<length>';             initial-value: 0px; inherits: false; }
+
+/* Rotation */
+@property --rotate          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-x        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-y        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-z        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+
+/* Scaling */
+@property --scale           { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --scale-x         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --scale-y         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+
+/* Skew */
+@property --skew-x          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --skew-y          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+
+/* Velocity-like properties (great for reactive UI) */
+@property --vx              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --vy              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --vz              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Acceleration-like props */
+@property --ax              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --ay              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+
+/* ========================================================================== */
+/* 4. FILTERS / EFFECTS ("FX Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --opacity         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --blur            { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --brightness      { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --contrast-fx     { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --saturate        { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --grayscale       { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --hue-rotate      { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --invert          { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Shadows */
+@property --shadow-x        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-y        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-blur     { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-spread   { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-alpha    { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Glow (thematic, so it inherits) */
+@property --glow            { syntax: '<number>';             initial-value: 0;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 5. TYPOGRAPHY ("Voice Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --font-size       { syntax: '<length>';             initial-value: 1rem;inherits: true; }
+@property --font-weight     { syntax: '<number>';             initial-value: 400; inherits: true; }
+@property --letter-space    { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --line-height     { syntax: '<number>';             initial-value: 1.4; inherits: true; }
+
+/* Numerical counters */
+@property --int             { syntax: '<integer>';            initial-value: 0;   inherits: false; }
+@property --float           { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+
+/* ========================================================================== */
+/* 6. LAYOUT / GEOMETRY ("Shape Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --radius          { syntax: '<length-percentage>';  initial-value: 0px; inherits: true; }
+@property --padding         { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --gap             { syntax: '<length>';             initial-value: 0px; inherits: true; }
+
+@property --width           { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --height          { syntax: '<length>';             initial-value: 0px; inherits: false; }
+
+/* Grids & 3D perspective */
+@property --columns         { syntax: '<integer>';            initial-value: 1;   inherits: true; }
+@property --perspective     { syntax: '<length>';             initial-value: 0px; inherits: true; }
+
+
+/* ========================================================================== */
+/* 7. TEMPORAL SYSTEM ("Time Layer") */
+/*    Essential for controlling animation speed and pacing. */
+/* -------------------------------------------------------------------------- */
+
+@property --duration        { syntax: '<time>';               initial-value: 0s;  inherits: false; }
+@property --delay           { syntax: '<time>';               initial-value: 0s;  inherits: false; }
+/* Note: Easing functions (cubic-bezier) cannot yet be strictly typed via @property 
+   in 2026. Use keywords or string fallbacks if necessary. */
+
+
+/* ========================================================================== */
+/* 8. ANCHOR / PIVOT ("Origin Layer") */
+/*    Controls the axis of rotation and scaling. */
+/* -------------------------------------------------------------------------- */
+
+@property --origin-x        { syntax: '<length-percentage>';  initial-value: 50%; inherits: false; }
+@property --origin-y        { syntax: '<length-percentage>';  initial-value: 50%; inherits: false; }
+@property --origin-z        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+```
+
+---
+Licensed under MIT. Created by Taylor Shards.
+````
+
+### **FILE:** `REFERENCE.md`
+````
+# 📘 HOUDINI STANDARD LIBRARY — v0.5.0 REFERENCE
+
+**Official Documentation Sheet**
+*Organized by Layer, Purpose, and Recommended Usage.*
+
+---
+
+## LAYER 1 — SYSTEM INPUTS
+**("The Nervous System")**
+*These variables feed raw data into the system from JavaScript. They do not style elements directly; they drive the other layers.*
+
+| Variable | Type | Inherits | Purpose | Typical Use |
+| :--- | :--- | :--- | :--- | :--- |
+| `--scalar` | `<number>` | ✔︎ | Main universal input | Scroll progress, multipliers |
+| `--scalar-x` | `<number>` | ✔︎ | Horizontal input | Pointer X ratio |
+| `--scalar-y` | `<number>` | ✔︎ | Vertical input | Pointer Y ratio |
+| `--scalar-z` | `<number>` | ✔︎ | Depth input | 3D effects |
+| `--state` | `<integer>` | ✔︎ | State machine value | Tabs, modes, steps |
+| `--progress` | `<number>` | ✔︎ | Animation progress | Timelines, loaders |
+| `--seed` | `<integer>` | ✔︎ | Randomization | Noise, procedural variation |
+
+---
+
+## LAYER 2 — COLOR SYSTEM
+**("The Paint Layer")**
+*Inherits by design. These determine the visual palette and flow downward through the DOM.*
+
+| Variable | Type | Inherits | Purpose |
+| :--- | :--- | :--- | :--- |
+| `--hue` | `<number>` | ✔︎ | Base color hue |
+| `--sat` | `<percentage>` | ✔︎ | Saturation |
+| `--lit` | `<percentage>` | ✔︎ | Lightness |
+| `--alpha` | `<number>` | ✔︎ | Opacity / global alpha |
+| `--warmth` | `<number>` | ✔︎ | Shift hue toward warm/cool |
+| `--contrast` | `<number>` | ✔︎ | Global tone mapping |
+| `--vibrance` | `<number>` | ✔︎ | Selective saturation boost |
+
+**Usage Note:** Combine with `color-mix()`, HSL functions, and gradients for dynamic skinning.
+
+---
+
+## LAYER 3 — TRANSFORM / MOTION
+**("The Physics Layer")**
+*Non-Inheriting. These are raw movement primitives suitable for animation and physics.*
+
+### Translation
+| Variable | Type | Inherits | Purpose |
+| :--- | :--- | :--- | :--- |
+| `--x` | `<length-percentage>` | ✘ | Horizontal movement |
+| `--y` | `<length-percentage>` | ✘ | Vertical movement |
+| `--z` | `<length>` | ✘ | Depth push/pull |
+
+### Rotation & Scale
+| Variable | Purpose |
+| :--- | :--- |
+| `--rotate` | Global rotation |
+| `--rotate-x` / `y` / `z` | 3D axis rotation |
+| `--scale` | Uniform scale |
+| `--scale-x` / `y` | Axis scale |
+
+### Kinetics (Velocity & Acceleration)
+| Variable | Purpose |
+| :--- | :--- |
+| `--vx`, `--vy`, `--vz` | Velocity vectors |
+| `--ax`, `--ay` | Acceleration vectors |
+
+**Usage Note:** Use the full stack to build unified transforms without conflicts:
+`transform: translate3d(var(--x), var(--y), var(--z)) rotateX(var(--rotate-x))...`
+
+---
+
+## LAYER 4 — FILTERS / EFFECTS
+**("The FX Layer")**
+*Local, Non-Inheriting. Post-processing style effects.*
+
+| Variable | Purpose |
+| :--- | :--- |
+| `--opacity` | Element fade |
+| `--blur` | Gaussian blur |
+| `--brightness` | Brightness multiplication |
+| `--contrast-fx` | Micro contrast |
+| `--saturate` | Saturation multiplier |
+| `--grayscale` | Monochrome |
+| `--hue-rotate` | Color spin |
+| `--invert` | Light/dark inversion |
+| `--shadow-x/y` | Shadow offset |
+| `--shadow-blur` | Shadow blur radius |
+| `--glow` | Global glow intensity (Inherits) |
+
+---
+
+## LAYER 5 — TYPOGRAPHY
+**("The Voice Layer")**
+*Inheriting for consistency.*
+
+| Variable | Type | Purpose |
+| :--- | :--- | :--- |
+| `--font-size` | `<length>` | Scale text responsively |
+| `--font-weight` | `<number>` | Dynamic emphasis |
+| `--letter-space` | `<length>` | Tracking |
+| `--line-height` | `<number>` | Rhythm control |
+| `--int` | `<integer>` | Counter animation |
+| `--float` | `<number>` | Decimal counter animation |
+
+---
+
+## LAYER 6 — LAYOUT / GEOMETRY
+**("The Shape Layer")**
+*Controls box geometry. Inherited unless unsafe.*
+
+| Variable | Type | Purpose |
+| :--- | :--- | :--- |
+| `--radius` | `<length-percentage>` | Border radius (Supports %) |
+| `--padding` | `<length>` | Internal spacing |
+| `--gap` | `<length>` | Child spacing |
+| `--columns` | `<integer>` | Grid column count |
+| `--perspective` | `<length>` | 3D depth |
+| `--width/height` | `<length>` | Explicit dimensions (Non-inheriting) |
+
+---
+
+## LAYER 7 — TEMPORAL SYSTEM
+**("The Time Layer")**
+*Controls duration and pacing. Non-Inheriting.*
+
+| Variable | Type | Purpose |
+| :--- | :--- | :--- |
+| `--duration` | `<time>` | Animation duration (e.g., 1s, 500ms) |
+| `--delay` | `<time>` | Animation delay |
+
+**Usage Note:** Must be used with valid time units (`s`, `ms`). Integers (`100`) are invalid.
+
+---
+
+## LAYER 8 — ANCHOR / PIVOT
+**("The Origin Layer")**
+*Controls the transform origin. Non-Inheriting.*
+
+| Variable | Type | Purpose |
+| :--- | :--- | :--- |
+| `--origin-x` | `<length-percentage>` | X Pivot (0% = Left, 100% = Right) |
+| `--origin-y` | `<length-percentage>` | Y Pivot (0% = Top, 100% = Bottom) |
+| `--origin-z` | `<length>` | Z Pivot (Depth) |
+
+**Usage Note:** Strict typing disables keywords. Use `50%` instead of `center`.
+
+---
+
+## THE ENGINE MODEL (How Layers Combine)
+
+1.  **Input Layer** drives **Motion, Color, and FX**.
+    *   *Example:* `--y: calc(var(--progress) * 100vh);`
+2.  **Motion Layer** builds the **Transform**.
+3.  **Color + FX Layers** produce the **Visual State**.
+4.  **Geometry Layer** defines the **Container**.
+5.  **Temporal Layer** defines the **Speed**.
+
+Together, these layers behave like a **CSS shader pipeline**, enabling procedural UI without JavaScript overhead.
+````
+
+### **FILE:** `examples/01-interpolated-gradient.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 01: Interpolated Gradient</title>
+    
+    <!-- IMPORT THE ENGINE -->
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        /* 
+           Using HSL v0.4.0 
+           No @property definitions needed here. They are in the engine.
+        */
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+            color: white;
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+
+        .aurora-card {
+            /* 1. SETUP: Define the starting state */
+            --width: 400px;
+            --height: 600px;
+            --radius: 24px;
+            
+            /* 2. THE ANIMATION VARIABLES */
+            /* We animate these generic inputs, and the gradient calculates the rest */
+            animation: northern-lights 8s ease-in-out infinite alternate;
+
+            /* 3. THE MAGIC GRADIENT */
+            /* 
+               Standard CSS cannot animate gradients smoothly. 
+               Houdini can because --hue-rotate is an <angle>, not a string.
+            */
+            background-image: linear-gradient(
+                var(--hue-rotate), 
+                hsl(var(--hue) 50% 10%),
+                hsl(calc(var(--hue) + 60) 80% 50%),
+                hsl(calc(var(--hue) + 120) 50% 10%)
+            );
+
+            /* Standard layout stuff */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            box-shadow: 0 50px 100px -20px black;
+        }
+
+        /* 
+           Notice: We are animating distinct types.
+           --hue-rotate (angle) handles the direction.
+           --hue (number) handles the color palette shift.
+        */
+        @keyframes northern-lights {
+            0% {
+                --hue-rotate: 0deg;
+                --hue: 200; /* Blue start */
+            }
+            100% {
+                --hue-rotate: 180deg; 
+                --hue: 340; /* Pink end */
+            }
+        }
+
+        .label {
+            position: absolute;
+            bottom: 40px;
+            text-align: center;
+            opacity: 0.7;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="aurora-card"></div>
+    
+    <div class="label">
+        HSL v0.4.0<br>
+        Interpolated Gradient<br>
+        (Angle + Number types)
+    </div>
+
+</body>
+</html>
+````
+
+### **FILE:** `examples/02-integer-counter.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 02: Integer Counter</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #0f172a;
+            color: white;
+            font-family: monospace;
+        }
+
+        .loader {
+            /* 1. SETUP */
+            /* We start the counter at 0 */
+            --int: 0;
+            
+            /* 2. THE ANIMATION */
+            /* Since --int is an <integer>, the browser interpolates it: 
+               0, 1, 2, 3... 100 */
+            transition: --int 4s cubic-bezier(0.25, 1, 0.5, 1);
+            
+            /* 3. THE BRIDGE */
+            /* We transfer the value of --int into a CSS Counter named 'num' */
+            counter-reset: num var(--int);
+            
+            /* Visual styles (using HSL vars) */
+            --font-size: 8rem;
+            --hue: 140; /* Green */
+            color: hsl(var(--hue) 80% 60%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* 
+           THE DISPLAY
+           We read the CSS Counter 'num' and print it.
+        */
+        .loader::before {
+            content: counter(num);
+            font-size: var(--font-size);
+            font-weight: 800;
+            font-variant-numeric: tabular-nums; /* Keeps numbers from jittering width */
+        }
+
+        .loader::after {
+            content: "HOVER TO LOAD";
+            font-size: 1rem;
+            letter-spacing: 0.2em;
+            opacity: 0.5;
+            margin-top: 1rem;
+        }
+
+        /* INTERACTION */
+        .loader:hover {
+            --int: 100;
+            --hue: 160;
+        }
+
+        /* 
+           BONUS: A progress bar that tracks the same variable 
+           This proves one variable can drive multiple things.
+        */
+        .bar {
+            width: 300px;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 2rem;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .fill {
+            height: 100%;
+            background: currentColor;
+            /* 
+               We convert the integer (0-100) to a percentage 
+               using calc()
+            */
+            width: calc(var(--int) * 1%); 
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="loader">
+        <div class="bar"><div class="fill"></div></div>
+    </div>
+
+</body>
+</html>
+````
+
+### **FILE:** `examples/03-physics-button.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 03: Physics Button</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #e0e5ec;
+            font-family: system-ui, sans-serif;
+        }
+
+        /* 
+           THE ARCHITECTURE 
+           We build the "Physics Rig" once.
+           Now this element is listening to all motion channels simultaneously.
+        */
+        .physics-btn {
+            /* 1. Base Dimensions */
+            --width: 200px;
+            --height: 80px;
+            
+            /* 2. The Rig (Connecting variables to the engine) */
+            transform: 
+                translate3d(var(--x), var(--y), var(--z))
+                rotateX(var(--rotate-x))
+                rotateY(var(--rotate-y))
+                rotateZ(var(--rotate-z))
+                scale3d(var(--scale), var(--scale), var(--scale));
+            
+            /* 3. The Transitions */
+            /* We transition the VARIABLES, not the transform property */
+            transition: 
+                --scale 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                --rotate-z 0.1s linear,
+                --y 0.1s linear,
+                --shadow-y 0.2s ease,
+                --shadow-blur 0.2s ease;
+
+            /* Visual Styling */
+            width: var(--width);
+            height: var(--height);
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            
+            /* Shadow using HSL shadow vars */
+            box-shadow: 
+                var(--shadow-x) 
+                var(--shadow-y) 
+                var(--shadow-blur) 
+                var(--shadow-spread) 
+                rgba(0,0,0, 0.3);
+        }
+
+        /* 
+           THE INTERACTION
+           Notice we don't mention 'transform' ever again.
+           We just update data.
+        */
+
+        /* State: Hover (Grow & Float) */
+        .physics-btn:hover {
+            --scale: 1.1;
+            --y: -5px;
+            --shadow-y: 15px;
+            --shadow-blur: 20px;
+        }
+
+        /* State: Active (Click & Tilt) */
+        .physics-btn:active {
+            --scale: 0.95;
+            --y: 2px;
+            --rotate-z: -3deg; /* The tilt! */
+            --shadow-y: 2px;
+            --shadow-blur: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <button class="physics-btn">
+        Click Me
+    </button>
+
+</body>
+</html>
+````
+
+### **FILE:** `examples/04-cinematic-card.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HSL Ex 04: Pure Houdini (Refactored)</title>
+
+  <!-- 1. IMPORT THE ENGINE (Instead of defining props manually) -->
+  <link rel="stylesheet" href="../houdini.css">
+
+  <style>
+    /* 
+       HSL v0.5.0 MAPPING:
+       --scalar-x  = Mouse X (0.0 - 1.0)
+       --scalar-y  = Mouse Y (0.0 - 1.0)
+       --scalar    = Active State (0.0 - 1.0)
+    */
+
+    :root {
+      --bg: #d0021b;
+      
+      /* THE LOGIC ENGINE: All math performed inside CSS using HSL primitives */
+      /* Note: We use --scalar (the hover state) to multiply the tilt intensity */
+      --tilt-x: calc((var(--scalar-y) - 0.5) * -30deg * var(--scalar));
+      --tilt-y: calc((var(--scalar-x) - 0.5) * 30deg * var(--scalar));
+      
+      --glare-x: calc(var(--scalar-x) * 100%);
+      --glare-y: calc(var(--scalar-y) * 100%);
+
+      /* Initialize defaults to center */
+      --scalar-x: 0.5;
+      --scalar-y: 0.5;
+      --scalar: 0;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh; /* changed from 100dvh for broader 2026 compat */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(circle at 20% 20%, #ffeb3b 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, #ff5722 0%, transparent 40%);
+      background-attachment: fixed;
+      font-family: system-ui, sans-serif;
+      overflow: hidden; 
+    }
+
+    .card {
+      width: clamp(280px, 85vw, 400px);
+      aspect-ratio: 5/7;
+      max-height: 80vh;
+      
+      background: rgba(15, 20, 30, 0.75);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      
+      /* THE OUTPUT: Driven by calculated Logic vars */
+      transform: 
+        perspective(1000px)
+        rotateX(var(--tilt-x)) 
+        rotateY(var(--tilt-y))
+        scale(calc(1 + (var(--scalar) * 0.05))); /* Subtle zoom on hover */
+
+      /* THE SECRET SAUCE: Native HSL property interpolation */
+      /* We transition the Input Variables, not the transform! */
+      transition: 
+        --scalar-x 0.1s linear, 
+        --scalar-y 0.1s linear, 
+        --scalar 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      
+      position: relative;
+      cursor: none;
+      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+    }
+
+    /* Hover State triggers the "active" scalar */
+    .card:hover { --scalar: 1; }
+
+    /* THE GLARE */
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        circle at var(--glare-x) var(--glare-y),
+        rgba(255, 255, 255, calc(var(--scalar) * 0.3)),
+        transparent 60%
+      );
+      pointer-events: none;
+    }
+
+    .content {
+      padding: 2.5rem;
+      color: white;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+
+    h2 { font-size: 3rem; margin: 0; font-weight: 900; line-height: 1; }
+    p { opacity: 0.8; line-height: 1.5; font-size: 1.1rem; }
+    code { font-size: 0.7rem; opacity: 0.4; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="card">
+    <div class="content">
+      <div>
+        <h2>PURE<br>HOUDINI</h2>
+        <p>Example 04: The Vivid Sovereign.<br>Refactored for HSL v0.5.0</p>
+      </div>
+      <code>HSL_v0.5.0 // LIBRARY_INTEGRATED</code>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * THE HSL BRIDGE
+     * We map mouse coordinates to the library's standardized scalar inputs.
+     */
+    document.addEventListener('pointermove', e => {
+      // Normalize to 0.0 - 1.0
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+
+      // Update the Standard Library Variables
+      document.documentElement.style.setProperty('--scalar-x', x);
+      document.documentElement.style.setProperty('--scalar-y', y);
+    });
+  </script>
+
+</body>
+</html>
+````
+
+### **FILE:** `examples/05-reactive-timeline.1.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 05: Reactive Timeline</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+            
+            /* 
+               SCENE ORCHESTRATION 
+               We map the single --progress (0.0 to 1.0) input 
+               to various aesthetic outputs using calc().
+            */
+            
+            /* 1. Sky Color Logic */
+            --sky-hue: 200; /* Blue base */
+            --sky-lightness: calc(10% + (var(--progress) * 50%)); /* Dark to Day */
+            background: hsl(var(--sky-hue) 60% var(--sky-lightness));
+            
+            /* 2. Global Text Color Logic */
+            color: hsl(var(--sky-hue) 10% calc(100% - (var(--progress) * 20%)));
+            
+            transition: background 0.1s linear, color 0.1s linear;
+        }
+
+        .scene {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* THE SUN */
+        .sun {
+            /* Geometry */
+            --width: 150px;
+            --height: 150px;
+            --radius: 75px; /* Half of the 150px width. 50% is invalid for <length> type. */
+            
+            /* Motion Logic: Moves from bottom (100vh) to top */
+            --y: calc(50vh - (var(--progress) * 80vh));
+            
+            /* Color Logic: Red (0) -> Yellow (60) */
+            --hue: calc(0 + (var(--progress) * 60)); 
+            
+            /* FX Logic: Glow intensity increases with height */
+            --glow: calc(10px + (var(--progress) * 50px));
+            
+            /* Construct the element */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            
+            /* Use HSL Engine to render */
+            background: hsl(var(--hue) 100% 60%);
+            box-shadow: 0 0 var(--glow) var(--glow) hsl(var(--hue) 100% 60% / 0.5);
+            transform: translate3d(0, var(--y), -200px);
+            
+            /* Smooth it out */
+            transition: --y 0.1s linear, --hue 0.1s linear, --glow 0.1s linear;
+        }
+
+        /* THE CARD */
+        .card {
+            position: absolute;
+            
+            /* Motion Logic: Rotates based on progress */
+            --rotate-x: calc(20deg - (var(--progress) * 20deg)); /* Tilts up */
+            --z: calc(0px + (var(--progress) * 100px)); /* Moves closer */
+            
+            /* FX Logic: Shadow gets tighter as sun rises */
+            --shadow-y: calc(50px - (var(--progress) * 40px));
+            --shadow-alpha: calc(0.5 - (var(--progress) * 0.2));
+            
+            /* Styling */
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            
+            /* Engine Assembly */
+            transform: 
+                perspective(1000px)
+                translate3d(0, 0, var(--z))
+                rotateX(var(--rotate-x));
+            
+            box-shadow: 
+                0 var(--shadow-y) 50px -10px 
+                rgba(0,0,0, var(--shadow-alpha));
+                
+            transition: --rotate-x 0.1s, --z 0.1s, --shadow-y 0.1s, --shadow-alpha 0.1s;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            /* Typography Logic: Spacing increases */
+            letter-spacing: calc(0px + (var(--progress) * 10px));
+            transition: letter-spacing 0.2s;
+        }
+
+        /* CONTROLS */
+        .controls {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        input[type="range"] {
+            width: 300px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 
+       LAYER 1: SYSTEM INPUT
+       We use a tiny bit of JS to bridge the Slider to the CSS Variable.
+       This simulates a ScrollObserver or backend state.
+    -->
+    <div class="scene" style="--progress: 0.5">
+        <div class="sun"></div>
+        <div class="card">
+            <h1>MORNING</h1>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label>SYSTEM INPUT: --progress</label>
+        <input type="range" min="0" max="1" step="0.01" value="0.5" 
+               oninput="document.querySelector('.scene').style.setProperty('--progress', this.value); document.body.style.setProperty('--progress', this.value)">
+    </div>
+
+</body>
+</html>
+````
+
+### **FILE:** `examples/05-reactive-timeline.2.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL v0.5.0 | Temporal Displacement</title>
+    
+    <!-- IMPORT THE v0.5.0 ENGINE -->
+    <link rel="stylesheet" href="../houdini.css">
+
+    <!-- FONT: Tech/Industrial feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* 1. SCENE LOGIC (Local calculations) */
+            /* We map the engine's --progress (0 to 1) to local color vars */
+            --bg-hue: calc(260 - (var(--progress) * 240)); /* Purple -> Gold */
+            --bg-lit: calc(5% + (var(--progress) * 15%));  /* Dark -> Dim */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            
+            /* Apply the calculated background */
+            background: hsl(var(--bg-hue) 30% var(--bg-lit));
+            color: white;
+            font-family: "Syncopate", sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            
+            /* Smooth background transitions */
+            transition: background 0.1s linear;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* LAYER 6: PERPSECTIVE */
+            /* We set the stage depth */
+            --perspective: 1200px;
+            perspective: var(--perspective);
+        }
+
+        /* 
+           THE ARTIFACT 
+           Demonstrates:
+           1. --radius (v0.5.0 Percentage Support)
+           2. --rotate-z (Physics Layer)
+           3. --hue (Color Layer)
+        */
+        .chronos-core {
+            position: relative;
+            
+            /* GEOMETRY: 40% of the viewport min-dimension */
+            --width: 40vmin;
+            --height: 40vmin;
+            
+            /* v0.5.0 PROOF: 
+               Animating radius from 0px (Square) to 50% (Circle).
+               This would fail in v0.4.0. 
+            */
+            --radius: calc(var(--progress) * 50%);
+            
+            /* COLOR LOGIC */
+            --hue: calc(280 - (var(--progress) * 240));
+            --glow: calc(var(--progress) * 80px);
+            
+            /* PHYSICS LOGIC */
+            --rotate-z: calc(var(--progress) * 180deg);
+            --z: calc(var(--progress) * 200px); /* Moves closer to camera */
+
+            /* APPLY THE ENGINE VARS */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            background: white;
+            
+            /* HSL Engine allows complex composed shadows */
+            box-shadow: 
+                0 0 var(--glow) white,
+                0 0 calc(var(--glow) * 2) hsl(var(--hue) 100% 50% / 0.5);
+            
+            /* HSL Engine allows strict 3D transforms */
+            transform: 
+                translateZ(var(--z)) 
+                rotateZ(var(--rotate-z));
+            
+            /* INTERPOLATION SETTINGS */
+            /* We tell the browser strictly how to handle these types */
+            transition: 
+                --radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                --hue 0.4s ease,
+                --z 0.8s ease,
+                --rotate-z 1s ease;
+        }
+
+        /* TEXTURE OVERLAY (Standard CSS, non-Houdini) */
+        .chronos-core::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit; /* Inherits the morphing radius */
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.2;
+            mix-blend-mode: overlay;
+        }
+
+        /* 
+           TYPOGRAPHY LAYER 
+           Demonstrates variable fonts driven by Houdini
+        */
+        .temporal-label {
+            position: absolute;
+            bottom: 15%;
+            left: 10%;
+            
+            /* LAYER 5: VOICE */
+            /* Weight goes from 100 (Thin) to 900 (Black) */
+            --font-weight: calc(100 + (var(--progress) * 800));
+            
+            /* Spacing tightens as it gets heavier */
+            --letter-space: calc(20px - (var(--progress) * 15px));
+            
+            font-size: 8vw;
+            font-weight: var(--font-weight);
+            letter-spacing: var(--letter-space);
+            text-transform: uppercase;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            
+            transition: --font-weight 0.4s ease, --letter-space 0.6s ease;
+        }
+
+        .data-stream {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            font-family: monospace;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            line-height: 2;
+        }
+
+        /* UI CONTROLS */
+        .controls {
+            height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            max-width: 600px;
+            cursor: pointer;
+        }
+
+        .tick {
+            font-size: 10px;
+            letter-spacing: 2px;
+            opacity: 0.5;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="viewport">
+        <div class="data-stream">
+            PHASE: <span id="phase-label">STASIS</span><br>
+            INPUT_VAR: --progress<br>
+            GEO_TYPE: <span id="geo-label">RECT</span>
+        </div>
+        
+        <div class="chronos-core"></div>
+        
+        <div class="temporal-label">
+            Shift
+        </div>
+    </div>
+
+    <div class="controls">
+        <span class="tick">0.0</span>
+        <!-- 
+            INPUT LAYER:
+            We map the slider directly to the Global --progress variable.
+            The HSL Engine handles the distribution to all other layers.
+        -->
+        <input type="range" min="0" max="1" step="0.001" value="0" id="driver">
+        <span class="tick">1.0</span>
+    </div>
+
+    <script>
+        const driver = document.getElementById('driver');
+        const root = document.documentElement;
+        const phaseLabel = document.getElementById('phase-label');
+        const geoLabel = document.getElementById('geo-label');
+        const labelText = document.querySelector('.temporal-label');
+
+        driver.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            
+            // 1. Update the Engine
+            root.style.setProperty('--progress', val);
+
+            // 2. Update the Meta-Data (UI Text)
+            if (val < 0.3) {
+                phaseLabel.textContent = "STASIS";
+                geoLabel.textContent = "POLY_SQR";
+                labelText.textContent = "DUSK";
+            } else if (val < 0.7) {
+                phaseLabel.textContent = "TRANSITION";
+                geoLabel.textContent = "MORPH_SUBD";
+                labelText.textContent = "SHIFT";
+            } else {
+                phaseLabel.textContent = "PEAK_FLUX";
+                geoLabel.textContent = "PRIM_CIRC";
+                labelText.textContent = "DAWN";
+            }
+        });
+    </script>
+</body>
+</html>
+````
+
+### **FILE:** `examples/05-reactive-timeline.3.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL v0.5.0 | Temporal Displacement</title>
+    
+    <!-- 
+       CRITICAL: We import the engine to prove the library works.
+       Your Sys Prompt's design is preserved below.
+    -->
+    <link rel="stylesheet" href="../houdini.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* SCENE LOGIC */
+            --bg-hue: calc(260 - (var(--progress) * 240)); 
+            --bg-lit: calc(5% + (var(--progress) * 15%));
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: hsl(var(--bg-hue) 30% var(--bg-lit));
+            color: white;
+            font-family: "Syncopate", sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.1s linear;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            --perspective: 1200px;
+            perspective: var(--perspective);
+        }
+
+        /* THE ARTIFACT */
+        .chronos-core {
+            position: relative;
+            --width: 40vmin;
+            --height: 40vmin;
+            
+            /* v0.5.0 PROOF: Morphing Square (0px) to Circle (50%) */
+            --radius: calc(var(--progress) * 50%);
+            
+            /* Motion & Color */
+            --hue: calc(280 - (var(--progress) * 240));
+            --glow: calc(var(--progress) * 80px);
+            --rotate-z: calc(var(--progress) * 180deg);
+            --z: calc(var(--progress) * 200px);
+
+            /* HSL Engine Application */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            background: white;
+            
+            box-shadow: 
+                0 0 var(--glow) white,
+                0 0 calc(var(--glow) * 2) hsl(var(--hue) 100% 50% / 0.5);
+            
+            transform: translateZ(var(--z)) rotateZ(var(--rotate-z));
+            
+            transition: 
+                --radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                --hue 0.4s ease,
+                --z 0.8s ease,
+                --rotate-z 1s ease;
+        }
+
+        /* Native Nesting works perfectly in 2026 */
+        .chronos-core::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.2;
+            mix-blend-mode: overlay;
+        }
+
+        /* TYPOGRAPHY */
+        .temporal-label {
+            position: absolute;
+            bottom: 15%;
+            left: 10%;
+            --font-weight: calc(100 + (var(--progress) * 800));
+            --letter-space: calc(20px - (var(--progress) * 15px));
+            
+            font-size: 8vw;
+            font-weight: var(--font-weight);
+            letter-spacing: var(--letter-space);
+            text-transform: uppercase;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            transition: --font-weight 0.4s ease, --letter-space 0.6s ease;
+        }
+
+        .data-stream {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            font-family: monospace;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            line-height: 2;
+        }
+
+        /* CONTROLS */
+        .controls {
+            height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            max-width: 600px;
+            cursor: pointer;
+        }
+
+        .tick { font-size: 10px; letter-spacing: 2px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <div class="viewport">
+        <div class="data-stream">
+            PHASE: <span id="phase-label">STASIS</span><br>
+            INPUT_VAR: --progress<br>
+            GEO_TYPE: <span id="geo-label">RECT</span>
+        </div>
+        <div class="chronos-core"></div>
+        <div class="temporal-label">Shift</div>
+    </div>
+
+    <div class="controls">
+        <span class="tick">0.0</span>
+        <input type="range" min="0" max="1" step="0.001" value="0" id="driver">
+        <span class="tick">1.0</span>
+    </div>
+
+    <script>
+        const driver = document.getElementById('driver');
+        const root = document.documentElement;
+        const phaseLabel = document.getElementById('phase-label');
+        const geoLabel = document.getElementById('geo-label');
+        const labelText = document.querySelector('.temporal-label');
+
+        driver.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            root.style.setProperty('--progress', val);
+
+            if (val < 0.3) {
+                phaseLabel.textContent = "STASIS";
+                geoLabel.textContent = "POLY_SQR";
+                labelText.textContent = "DUSK";
+            } else if (val < 0.7) {
+                phaseLabel.textContent = "TRANSITION";
+                geoLabel.textContent = "MORPH_SUBD";
+                labelText.textContent = "SHIFT";
+            } else {
+                phaseLabel.textContent = "PEAK_FLUX";
+                geoLabel.textContent = "PRIM_CIRC";
+                labelText.textContent = "DAWN";
+            }
+        });
+    </script>
+</body>
+</html>
+````
+
+### **FILE:** `examples/05-reactive-timeline.4.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL v0.5.0 | Temporal Displacement</title>
+    
+    <!-- 
+       CRITICAL ARCHITECTURE NOTE:
+       We import the engine to prove the library works.
+       We do NOT define @property here; we trust houdini.css to do it.
+    -->
+    <link rel="stylesheet" href="../houdini.css">
+    
+    <!-- Design Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* SCENE LOGIC: Mapping global inputs to local aesthetic vars */
+            --bg-hue: calc(260 - (var(--progress) * 240)); 
+            --bg-lit: calc(5% + (var(--progress) * 15%));
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: hsl(var(--bg-hue) 30% var(--bg-lit));
+            color: white;
+            font-family: "Syncopate", sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.1s linear;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* LAYER 6: PERSPECTIVE (Engine Primitive) */
+            --perspective: 1200px;
+            perspective: var(--perspective);
+        }
+
+        /* THE ARTIFACT */
+        .chronos-core {
+            position: relative;
+            --width: 40vmin;
+            --height: 40vmin;
+            
+            /* v0.5.0 PROOF: Morphing Square (0px) to Circle (50%) */
+            /* This works because Layer 6 now accepts <length-percentage> */
+            --radius: calc(var(--progress) * 50%);
+            
+            /* LAYER 2 & 3: Motion & Color inputs */
+            --hue: calc(280 - (var(--progress) * 240));
+            --glow: calc(var(--progress) * 80px);
+            --rotate-z: calc(var(--progress) * 180deg);
+            --z: calc(var(--progress) * 200px);
+
+            /* HSL ENGINE APPLICATION */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            background: white;
+            
+            /* Complex composed shadows using Engine vars */
+            box-shadow: 
+                0 0 var(--glow) white,
+                0 0 calc(var(--glow) * 2) hsl(var(--hue) 100% 50% / 0.5);
+            
+            /* Strict 3D transforms */
+            transform: translateZ(var(--z)) rotateZ(var(--rotate-z));
+            
+            /* Smooth Interpolation */
+            transition: 
+                --radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                --hue 0.4s ease,
+                --z 0.8s ease,
+                --rotate-z 1s ease;
+        }
+
+        /* Texture Overlay */
+        .chronos-core::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.9;
+            mix-blend-mode: overlay;
+        }
+
+        /* TYPOGRAPHY LAYER (Variable Fonts + Engine) */
+        .temporal-label {
+            position: absolute;
+            bottom: 15%;
+            left: 10%;
+            --font-weight: calc(100 + (var(--progress) * 800));
+            --letter-space: calc(20px - (var(--progress) * 15px));
+            
+            font-size: 8vw;
+            font-weight: var(--font-weight);
+            letter-spacing: var(--letter-space);
+            text-transform: uppercase;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            transition: --font-weight 0.4s ease, --letter-space 0.6s ease;
+        }
+
+        .data-stream {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            font-family: monospace;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            line-height: 2;
+        }
+
+        /* CONTROLS UI */
+        .controls {
+            height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            max-width: 600px;
+            cursor: pointer;
+        }
+
+        .tick { font-size: 10px; letter-spacing: 2px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <div class="viewport">
+        <div class="data-stream">
+            PHASE: <span id="phase-label">STASIS</span><br>
+            INPUT_VAR: --progress<br>
+            GEO_TYPE: <span id="geo-label">RECT</span>
+        </div>
+        <div class="chronos-core"></div>
+        <div class="temporal-label">Shift</div>
+    </div>
+
+    <div class="controls">
+        <span class="tick">0.0</span>
+        <input type="range" min="0" max="1" step="0.001" value="0" id="driver">
+        <span class="tick">1.0</span>
+    </div>
+
+    <script>
+        const driver = document.getElementById('driver');
+        const root = document.documentElement;
+        const phaseLabel = document.getElementById('phase-label');
+        const geoLabel = document.getElementById('geo-label');
+        const labelText = document.querySelector('.temporal-label');
+
+        driver.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            root.style.setProperty('--progress', val);
+
+            if (val < 0.3) {
+                phaseLabel.textContent = "STASIS";
+                geoLabel.textContent = "POLY_SQR";
+                labelText.textContent = "DUSK";
+            } else if (val < 0.7) {
+                phaseLabel.textContent = "TRANSITION";
+                geoLabel.textContent = "MORPH_SUBD";
+                labelText.textContent = "SHIFT";
+            } else {
+                phaseLabel.textContent = "PEAK_FLUX";
+                geoLabel.textContent = "PRIM_CIRC";
+                labelText.textContent = "DAWN";
+            }
+        });
+    </script>
+</body>
+</html>
+````
+
+### **FILE:** `examples/05-reactive-timeline.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 05: Reactive Timeline</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+            
+            /* 
+               SCENE ORCHESTRATION 
+               We map the single --progress (0.0 to 1.0) input 
+               to various aesthetic outputs using calc().
+            */
+            
+            /* 1. Sky Color Logic */
+            --sky-hue: 200; /* Blue base */
+            --sky-lightness: calc(10% + (var(--progress) * 50%)); /* Dark to Day */
+            background: hsl(var(--sky-hue) 60% var(--sky-lightness));
+            
+            /* 2. Global Text Color Logic */
+            color: hsl(var(--sky-hue) 10% calc(100% - (var(--progress) * 20%)));
+            
+            transition: background 0.1s linear, color 0.1s linear;
+        }
+
+        .scene {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* THE SUN */
+        .sun {
+            /* Geometry */
+            --width: 150px;
+            --height: 150px;
+            --radius: 75px; /* Half of the 150px width. 50% is invalid for <length> type. */
+            
+            /* Motion Logic: Moves from bottom (100vh) to top */
+            --y: calc(50vh - (var(--progress) * 80vh));
+            
+            /* Color Logic: Red (0) -> Yellow (60) */
+            --hue: calc(0 + (var(--progress) * 60)); 
+            
+            /* FX Logic: Glow intensity increases with height */
+            --glow: calc(10px + (var(--progress) * 50px));
+            
+            /* Construct the element */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            
+            /* Use HSL Engine to render */
+            background: hsl(var(--hue) 100% 60%);
+            box-shadow: 0 0 var(--glow) var(--glow) hsl(var(--hue) 100% 60% / 0.5);
+            transform: translate3d(0, var(--y), -200px);
+            
+            /* Smooth it out */
+            transition: --y 0.1s linear, --hue 0.1s linear, --glow 0.1s linear;
+        }
+
+        /* THE CARD */
+        .card {
+            position: absolute;
+            
+            /* Motion Logic: Rotates based on progress */
+            --rotate-x: calc(20deg - (var(--progress) * 20deg)); /* Tilts up */
+            --z: calc(0px + (var(--progress) * 100px)); /* Moves closer */
+            
+            /* FX Logic: Shadow gets tighter as sun rises */
+            --shadow-y: calc(50px - (var(--progress) * 40px));
+            --shadow-alpha: calc(0.5 - (var(--progress) * 0.2));
+            
+            /* Styling */
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            
+            /* Engine Assembly */
+            transform: 
+                perspective(1000px)
+                translate3d(0, 0, var(--z))
+                rotateX(var(--rotate-x));
+            
+            box-shadow: 
+                0 var(--shadow-y) 50px -10px 
+                rgba(0,0,0, var(--shadow-alpha));
+                
+            transition: --rotate-x 0.1s, --z 0.1s, --shadow-y 0.1s, --shadow-alpha 0.1s;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            /* Typography Logic: Spacing increases */
+            letter-spacing: calc(0px + (var(--progress) * 10px));
+            transition: letter-spacing 0.2s;
+        }
+
+        /* CONTROLS */
+        .controls {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        input[type="range"] {
+            width: 300px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 
+       LAYER 1: SYSTEM INPUT
+       We use a tiny bit of JS to bridge the Slider to the CSS Variable.
+       This simulates a ScrollObserver or backend state.
+    -->
+    <div class="scene" style="--progress: 0.5">
+        <div class="sun"></div>
+        <div class="card">
+            <h1>MORNING</h1>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label>SYSTEM INPUT: --progress</label>
+        <input type="range" min="0" max="1" step="0.01" value="0.5" 
+               oninput="document.querySelector('.scene').style.setProperty('--progress', this.value); document.body.style.setProperty('--progress', this.value)">
+    </div>
+
+</body>
+</html>
+````
+
+### **FILE:** `examples/06-time-and-origin.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 06: Time & Origin (v0.5.0)</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #222;
+            color: white;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 
+           THE METRONOME 
+           Demonstrates:
+           1. --origin (Pivot control)
+           2. --duration (Time control)
+           3. --radius (Percentage geometry)
+        */
+        .metronome {
+            position: relative;
+            
+            /* 1. GEOMETRY: The rod */
+            --width: 10px;
+            --height: 300px;
+            
+            /* 2. PIVOT POINT (The New v0.5.0 Feature) */
+            /* We want it to swing from the BOTTOM center */
+            /* Remember: Keywords like 'bottom' are illegal. Use 100%. */
+            --origin-x: 50%;
+            --origin-y: 100%;
+            
+            /* 3. TIME CONTROL (The New v0.5.0 Feature) */
+            /* Default beat: 1 second per swing */
+            --duration: 1s; 
+            
+            /* Animation Setup */
+            /* We animate the rotation from -45deg to 45deg */
+            animation: tick-tock var(--duration) ease-in-out infinite alternate;
+            
+            /* Construct the Rod */
+            width: var(--width);
+            height: var(--height);
+            background: #444;
+            border-radius: 4px;
+            
+            /* Apply the Physics Engine */
+            transform-origin: var(--origin-x) var(--origin-y);
+        }
+
+        /* The Bob (Weight) */
+        .bob {
+            position: absolute;
+            top: 0; 
+            left: 50%;
+            
+            /* GEOMETRY FIX VERIFICATION */
+            /* In v0.4.0, this would break. In v0.5.0, it makes a circle. */
+            --radius: 50%; 
+            --size: 60px;
+            
+            width: var(--size);
+            height: var(--size);
+            border-radius: var(--radius);
+            
+            /* Centering the bob on the rod tip */
+            translate: -50% -50%;
+            
+            /* Styling */
+            background: white;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        @keyframes tick-tock {
+            from { rotate: -30deg; }
+            to   { rotate: 30deg; }
+        }
+
+        /* CONTROLS UI */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="range"] {
+            width: 200px;
+            accent-color: white;
+        }
+
+        .readout {
+            font-family: monospace;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="metronome" id="device">
+        <div class="bob"></div>
+    </div>
+
+    <div class="controls">
+        <label>TEMPO (--duration)</label>
+        
+        <!-- 
+           JS BRIDGE:
+           We simply map the input range (0.2 to 2.0) directly into the --duration variable.
+           Because we typed it as <time>, we must append 's' in the JS string.
+        -->
+        <input type="range" min="0.2" max="2.0" step="0.1" value="1.0" 
+               oninput="updateTempo(this.value)">
+        
+        <div class="readout">1.0s</div>
+    </div>
+
+    <script>
+        function updateTempo(val) {
+            const device = document.getElementById('device');
+            const label = document.querySelector('.readout');
+            
+            // CRITICAL: We must include the unit 's' because 
+            // the variable is strictly typed as <time>.
+            device.style.setProperty('--duration', val + 's');
+            
+            label.textContent = val + 's';
+        }
+    </script>
+
+</body>
+</html>
+````
+
+### **FILE:** `examples/README.md`
+````
+# HSL Examples (v0.5.0)
+
+This directory contains reference implementations of the **Houdini Standard Library**. 
+Each example targets specific layers of the engine to verify browser support and syntax strictness.
+
+### 01. Interpolated Gradient (`01-interpolated-gradient.html`)
+**Target:** Layer 2 (Color)
+**Concept:** Type Mixing
+Demonstrates the engine's ability to interpolate two different variable types simultaneously inside a gradient:
+*   `--hue-rotate` (`<angle>`) for direction.
+*   `--hue` (`<number>`) for color palette shifting.
+
+### 02. Integer Counter (`02-integer-counter.html`)
+**Target:** Layer 5 (Typography/Voice)
+**Concept:** Integer Interpolation
+Uses `transition` on a strictly typed `<integer>` variable.
+*   Bridges CSS variables to CSS Counters (`content: counter(num)`).
+*   Proves that the browser rounds values automatically during animation.
+
+### 03. Physics Button (`03-physics-button.html`)
+**Target:** Layer 3 (Physics)
+**Concept:** Reactive UI & Composition
+A "Physics Rig" that separates inputs from outputs.
+*   Button interactions do not touch `transform`.
+*   They update `--scale`, `--y`, and `--rotate-z` independently.
+*   The engine composites these into a single 3D matrix.
+
+### 04. Pure Houdini (`04-pure-houdini.html`)
+**Target:** Layer 1 (Inputs)
+**Concept:** Logic & Calculus
+A logic-heavy demo with zero JavaScript logic.
+*   JS only provides raw mouse coordinates (0.0 - 1.0).
+*   CSS handles all `calc()` math for 3D tilt and glare positioning.
+*   *Refactored in v0.5.0 to use standard `--scalar-x` inputs.*
+
+### 05. Reactive Timeline (`05-reactive-timeline.html`)
+**Target:** Layer 6 (Shape)
+**Concept:** Timeline Mapping
+Maps a single variable (`--progress`) to an entire scene.
+*   Demonstrates how to drive geometry, color, and position from one slider.
+*   *Verified v0.5.0 patch:* `--radius` now supports percentages (e.g., sun geometry).
+
+### 06. Metronome (`06-time-and-origin.html`)
+**Target:** Layer 7 (Time) & Layer 8 (Anchor)
+**Concept:** The v0.5.0 Feature Set
+Specifically designed to test the newest primitives.
+*   **Time:** Uses `<time>` typed variables (`--duration`) to control animation speed dynamically.
+*   **Anchor:** Uses `<length-percentage>` (`--origin-y`) to move the pivot point for pendulum physics.
+````
+
+### **FILE:** `houdini.css`
+````
+/* ==========================================================================
+   HOUDINI STANDARD LIBRARY — v0.5.0
+   Exhaustive, typed, composable CSS variable engine.
+   Copyright (c) 2026 Taylor Shards. Licensed under MIT.
+   ========================================================================== */
+
+/* 
+   ARCHITECTURAL NOTE FOR AI / LLM ANALYSIS:
+   -----------------------------------------
+   This library utilizes the CSS Properties and Values API (Houdini).
+   It relies on strict typing via @property.
+   
+   - Variables typed as '<number>' are unitless scalars.
+   - Variables typed as '<angle>' must contain units (deg, rad).
+   - Variables typed as '<length>' must be absolute (px, rem) unless context allows.
+   
+   Inheritance is explicitly disabled on Physics layers (Layer 3 & 4)
+   to prevent recursive transformation compounding in the DOM tree.
+*/
+
+/* ========================================================================== */
+/* 1. SYSTEM INPUTS ("Nervous System") */
+/* -------------------------------------------------------------------------- */
+
+@property --scalar          { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-x        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-y        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --scalar-z        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+
+@property --state           { syntax: '<integer>';            initial-value: 0;   inherits: true; }
+@property --progress        { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --seed            { syntax: '<integer>';            initial-value: 0;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 2. COLOR SYSTEM ("Paint Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --hue             { syntax: '<number>';             initial-value: 210; inherits: true; }
+@property --sat             { syntax: '<percentage>';         initial-value: 100%;inherits: true; }
+@property --lit             { syntax: '<percentage>';         initial-value: 50%; inherits: true; }
+@property --alpha           { syntax: '<number>';             initial-value: 1;  inherits: true; }
+
+/* Derived color controls */
+@property --warmth          { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --contrast        { syntax: '<number>';             initial-value: 1;   inherits: true; }
+@property --vibrance        { syntax: '<number>';             initial-value: 1;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 3. TRANSFORM / MOTION ("Physics Layer") */
+/*  - All NON-INHERITING — prevents cascading distortions */
+/* -------------------------------------------------------------------------- */
+
+/* Translation */
+@property --x               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+@property --y               { syntax: '<length-percentage>';  initial-value: 0%;  inherits: false; }
+@property --z               { syntax: '<length>';             initial-value: 0px; inherits: false; }
+
+/* Rotation */
+@property --rotate          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-x        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-y        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --rotate-z        { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+
+/* Scaling */
+@property --scale           { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --scale-x         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --scale-y         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+
+/* Skew */
+@property --skew-x          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --skew-y          { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+
+/* Velocity-like properties (great for reactive UI) */
+@property --vx              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --vy              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --vz              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Acceleration-like props */
+@property --ax              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --ay              { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+
+/* ========================================================================== */
+/* 4. FILTERS / EFFECTS ("FX Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --opacity         { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --blur            { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --brightness      { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --contrast-fx     { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --saturate        { syntax: '<number>';             initial-value: 1;   inherits: false; }
+@property --grayscale       { syntax: '<number>';             initial-value: 0;   inherits: false; }
+@property --hue-rotate      { syntax: '<angle>';              initial-value: 0deg;inherits: false; }
+@property --invert          { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Shadows */
+@property --shadow-x        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-y        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-blur     { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-spread   { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --shadow-alpha    { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+/* Glow (thematic, so it inherits) */
+@property --glow            { syntax: '<number>';             initial-value: 0;   inherits: true; }
+
+
+/* ========================================================================== */
+/* 5. TYPOGRAPHY ("Voice Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --font-size       { syntax: '<length>';             initial-value: 1rem;inherits: true; }
+@property --font-weight     { syntax: '<number>';             initial-value: 400; inherits: true; }
+@property --letter-space    { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --line-height     { syntax: '<number>';             initial-value: 1.4; inherits: true; }
+
+/* Numerical counters */
+@property --int             { syntax: '<integer>';            initial-value: 0;   inherits: false; }
+@property --float           { syntax: '<number>';             initial-value: 0;   inherits: false; }
+
+
+/* ========================================================================== */
+/* 6. LAYOUT / GEOMETRY ("Shape Layer") */
+/* -------------------------------------------------------------------------- */
+
+@property --radius          { syntax: '<length-percentage>';  initial-value: 0px; inherits: true; }
+@property --padding         { syntax: '<length>';             initial-value: 0px; inherits: true; }
+@property --gap             { syntax: '<length>';             initial-value: 0px; inherits: true; }
+
+@property --width           { syntax: '<length>';             initial-value: 0px; inherits: false; }
+@property --height          { syntax: '<length>';             initial-value: 0px; inherits: false; }
+
+/* Grids & 3D perspective */
+@property --columns         { syntax: '<integer>';            initial-value: 1;   inherits: true; }
+@property --perspective     { syntax: '<length>';             initial-value: 0px; inherits: true; }
+
+
+/* ========================================================================== */
+/* 7. TEMPORAL SYSTEM ("Time Layer") */
+/*    Essential for controlling animation speed and pacing. */
+/* -------------------------------------------------------------------------- */
+
+@property --duration        { syntax: '<time>';               initial-value: 0s;  inherits: false; }
+@property --delay           { syntax: '<time>';               initial-value: 0s;  inherits: false; }
+/* Note: Easing functions (cubic-bezier) cannot yet be strictly typed via @property 
+   in 2026. Use keywords or string fallbacks if necessary. */
+
+
+/* ========================================================================== */
+/* 8. ANCHOR / PIVOT ("Origin Layer") */
+/*    Controls the axis of rotation and scaling. */
+/* -------------------------------------------------------------------------- */
+
+@property --origin-x        { syntax: '<length-percentage>';  initial-value: 50%; inherits: false; }
+@property --origin-y        { syntax: '<length-percentage>';  initial-value: 50%; inherits: false; }
+@property --origin-z        { syntax: '<length>';             initial-value: 0px; inherits: false; }
+````
+

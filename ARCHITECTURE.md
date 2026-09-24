@@ -7,12 +7,13 @@ HSL provides an **Engine** (typed variables that behave like physics).
 **Decision:** We do not provide `.btn` classes. We provide `--scale` and `--hue`.
 **Reasoning:** This allows the library to be agnostic to the design system. It is infrastructure, not UI.
 
-## 2. Type Strictness and The "Square Sun" Principle
+## 2. Type Strictness & The "Union" Syntax
 Standard CSS is loosely typed. HSL is strictly typed using `@property`.
 
-**Constraint:** A variable defined as `<length>` (e.g., `--radius`) generally rejects `<percentage>` values in strict environments.
-**Example:** Passing `50%` to a `<length>` property will result in an invalid state (falling back to 0), causing rendering artifacts (e.g., a square instead of a circle).
-**Implication:** Developers must respect the schema. Mathematical operations (`calc`) must resolve to the correct type.
+**Evolution (v0.5.0):** Early versions of strict CSS struggled with mixed units (e.g., `<length>` rejecting `<percentage>`).
+**Solution:** This engine utilizes **Union Syntax** (e.g., `<length-percentage>`) for geometry and positioning.
+*   **Result:** Variables like `--radius` or `--x` accept both absolute units (`px`, `rem`) and relative units (`%`).
+*   **Implication:** Developers get the safety of strict typing (preventing string injection) without losing the flexibility of responsive fluid geometry.
 
 ## 3. Inheritance Model (The "Nervous System" vs "Physics")
 We separate variables into two categories based on inheritance:
@@ -29,3 +30,12 @@ The library is designed to function as a unidirectional data pipeline:
 3.  **Output:** The browser renders the pixel.
 
 This moves state management from the JavaScript thread to the CSS Compositor thread.
+
+## 5. The "Keyword Sacrifice" (Interpolation vs. Convenience)
+In v0.5.0, the decision was made to prefer **Mathematical Correctness** over **Authoring Convenience**.
+
+**Decision:** We use strict union types (`<length-percentage>`) for geometry and anchors.
+**Trade-off:** This explicitly disables CSS keywords.
+*   `--origin-x: center` is **INVALID**.
+*   `--origin-x: 50%` is **VALID**.
+**Reasoning:** Keywords cannot be mathematically interpolated by the compositor (you cannot tween from `0px` to `center`). By forcing numeric inputs (`%`, `px`, `rem`), we guarantee that every variable in the engine is 60fps-animation-ready, eliminating "snap" glitches during state changes.

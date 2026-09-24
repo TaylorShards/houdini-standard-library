@@ -1,0 +1,1311 @@
+
+## Project File Tree
+
+```
+examples/
+├── [4.2KB] 04-cinematic-card.html
+├── [4.9KB] 05-reactive-timeline.1.html
+├── [7.4KB] 05-reactive-timeline.2.html
+├── [5.8KB] 05-reactive-timeline.3.html
+├── [6.2KB] 05-reactive-timeline.4.html
+├── [4.9KB] 05-reactive-timeline.html
+├── [4.2KB] 06-time-and-origin.html
+└── [2.2KB] README.md
+```
+
+---
+
+
+
+### **FILE:** `04-cinematic-card.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HSL Ex 04: Pure Houdini (Refactored)</title>
+
+  <!-- 1. IMPORT THE ENGINE (Instead of defining props manually) -->
+  <link rel="stylesheet" href="../houdini.css">
+
+  <style>
+    /* 
+       HSL v0.5.0 MAPPING:
+       --scalar-x  = Mouse X (0.0 - 1.0)
+       --scalar-y  = Mouse Y (0.0 - 1.0)
+       --scalar    = Active State (0.0 - 1.0)
+    */
+
+    :root {
+      --bg: #d0021b;
+      
+      /* THE LOGIC ENGINE: All math performed inside CSS using HSL primitives */
+      /* Note: We use --scalar (the hover state) to multiply the tilt intensity */
+      /* MOVED TO .card for encapsulation? 
+      --tilt-x: calc((var(--scalar-y) - 0.5) * -30deg * var(--scalar));
+      --tilt-y: calc((var(--scalar-x) - 0.5) * 30deg * var(--scalar));
+      */
+
+      --glare-x: calc(var(--scalar-x) * 100%);
+      --glare-y: calc(var(--scalar-y) * 100%);
+
+      /* Initialize defaults to center */
+      --scalar-x: 0.5;
+      --scalar-y: 0.5;
+      --scalar: 0;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh; /* changed from 100dvh for broader 2026 compat */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(circle at 20% 20%, #ffeb3b 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, #ff5722 0%, transparent 40%);
+      background-attachment: fixed;
+      font-family: system-ui, sans-serif;
+      overflow: hidden; 
+    }
+
+    .card {
+      width: clamp(280px, 85vw, 400px);
+      aspect-ratio: 5/7;
+      max-height: 80vh;
+      
+      background: rgba(15, 20, 30, 0.75);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      
+      /* THE OUTPUT: Driven by calculated Logic vars */
+      transform: 
+        perspective(1000px)
+        rotateX(var(--tilt-x)) 
+        rotateY(var(--tilt-y))
+        scale(calc(1 + (var(--scalar) * 0.05))); /* Subtle zoom on hover */
+
+      /* THE SECRET SAUCE: Native HSL property interpolation */
+      /* We transition the Input Variables, not the transform! */
+      transition: 
+        --scalar-x 0.1s linear, 
+        --scalar-y 0.1s linear, 
+        --scalar 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      
+      position: relative;
+      cursor: none;
+      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+    }
+.card {
+  --tilt-x: calc((var(--scalar-y) - 0.5) * -30deg * var(--scalar));
+  --tilt-y: calc((var(--scalar-x) - 0.5) * 30deg * var(--scalar));
+}
+    /* Hover State triggers the "active" scalar */
+    .card:hover { --scalar: 1; }
+
+    /* THE GLARE */
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        circle at var(--glare-x) var(--glare-y),
+        rgba(255, 255, 255, calc(var(--scalar) * 0.3)),
+        transparent 60%
+      );
+      pointer-events: none;
+    }
+
+    .content {
+      padding: 2.5rem;
+      color: white;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+
+    h2 { font-size: 3rem; margin: 0; font-weight: 900; line-height: 1; }
+    p { opacity: 0.8; line-height: 1.5; font-size: 1.1rem; }
+    code { font-size: 0.7rem; opacity: 0.4; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="card">
+    <div class="content">
+      <div>
+        <h2>PURE<br>HOUDINI</h2>
+        <p>Example 04: The Vivid Sovereign.<br>Refactored for HSL v0.5.0</p>
+      </div>
+      <code>HSL_v0.5.0 // LIBRARY_INTEGRATED</code>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * THE HSL BRIDGE
+     * We map mouse coordinates to the library's standardized scalar inputs.
+     */
+    document.addEventListener('pointermove', e => {
+      // Normalize to 0.0 - 1.0
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+
+      // Update the Standard Library Variables
+      document.documentElement.style.setProperty('--scalar-x', x);
+      document.documentElement.style.setProperty('--scalar-y', y);
+    });
+  </script>
+
+</body>
+</html>
+````
+
+### **FILE:** `05-reactive-timeline.1.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 05: Reactive Timeline</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+            
+            /* 
+               SCENE ORCHESTRATION 
+               We map the single --progress (0.0 to 1.0) input 
+               to various aesthetic outputs using calc().
+            */
+            
+            /* 1. Sky Color Logic */
+            --sky-hue: 200; /* Blue base */
+            --sky-lightness: calc(10% + (var(--progress) * 50%)); /* Dark to Day */
+            background: hsl(var(--sky-hue) 60% var(--sky-lightness));
+            
+            /* 2. Global Text Color Logic */
+            color: hsl(var(--sky-hue) 10% calc(100% - (var(--progress) * 20%)));
+            
+            transition: background 0.1s linear, color 0.1s linear;
+        }
+
+        .scene {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* THE SUN */
+        .sun {
+            /* Geometry */
+            --width: 150px;
+            --height: 150px;
+            --radius: 75px; /* Half of the 150px width. 50% is invalid for <length> type. */
+            
+            /* Motion Logic: Moves from bottom (100vh) to top */
+            --y: calc(50vh - (var(--progress) * 80vh));
+            
+            /* Color Logic: Red (0) -> Yellow (60) */
+            --hue: calc(0 + (var(--progress) * 60)); 
+            
+            /* FX Logic: Glow intensity increases with height */
+            --glow: calc(10px + (var(--progress) * 50px));
+            
+            /* Construct the element */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            
+            /* Use HSL Engine to render */
+            background: hsl(var(--hue) 100% 60%);
+            box-shadow: 0 0 var(--glow) var(--glow) hsl(var(--hue) 100% 60% / 0.5);
+            transform: translate3d(0, var(--y), -200px);
+            
+            /* Smooth it out */
+            transition: --y 0.1s linear, --hue 0.1s linear, --glow 0.1s linear;
+        }
+
+        /* THE CARD */
+        .card {
+            position: absolute;
+            
+            /* Motion Logic: Rotates based on progress */
+            --rotate-x: calc(20deg - (var(--progress) * 20deg)); /* Tilts up */
+            --z: calc(0px + (var(--progress) * 100px)); /* Moves closer */
+            
+            /* FX Logic: Shadow gets tighter as sun rises */
+            --shadow-y: calc(50px - (var(--progress) * 40px));
+            --shadow-alpha: calc(0.5 - (var(--progress) * 0.2));
+            
+            /* Styling */
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            
+            /* Engine Assembly */
+            transform: 
+                perspective(1000px)
+                translate3d(0, 0, var(--z))
+                rotateX(var(--rotate-x));
+            
+            box-shadow: 
+                0 var(--shadow-y) 50px -10px 
+                rgba(0,0,0, var(--shadow-alpha));
+                
+            transition: --rotate-x 0.1s, --z 0.1s, --shadow-y 0.1s, --shadow-alpha 0.1s;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            /* Typography Logic: Spacing increases */
+            letter-spacing: calc(0px + (var(--progress) * 10px));
+            transition: letter-spacing 0.2s;
+        }
+
+        /* CONTROLS */
+        .controls {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        input[type="range"] {
+            width: 300px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 
+       LAYER 1: SYSTEM INPUT
+       We use a tiny bit of JS to bridge the Slider to the CSS Variable.
+       This simulates a ScrollObserver or backend state.
+    -->
+    <div class="scene" style="--progress: 0.5">
+        <div class="sun"></div>
+        <div class="card">
+            <h1>MORNING</h1>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label>SYSTEM INPUT: --progress</label>
+        <input type="range" min="0" max="1" step="0.01" value="0.5" 
+               oninput="document.querySelector('.scene').style.setProperty('--progress', this.value); document.body.style.setProperty('--progress', this.value)">
+    </div>
+
+</body>
+</html>
+````
+
+### **FILE:** `05-reactive-timeline.2.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL v0.5.0 | Temporal Displacement</title>
+    
+    <!-- IMPORT THE v0.5.0 ENGINE -->
+    <link rel="stylesheet" href="../houdini.css">
+
+    <!-- FONT: Tech/Industrial feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* 1. SCENE LOGIC (Local calculations) */
+            /* We map the engine's --progress (0 to 1) to local color vars */
+            --bg-hue: calc(260 - (var(--progress) * 240)); /* Purple -> Gold */
+            --bg-lit: calc(5% + (var(--progress) * 15%));  /* Dark -> Dim */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            
+            /* Apply the calculated background */
+            background: hsl(var(--bg-hue) 30% var(--bg-lit));
+            color: white;
+            font-family: "Syncopate", sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            
+            /* Smooth background transitions */
+            transition: background 0.1s linear;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* LAYER 6: PERPSECTIVE */
+            /* We set the stage depth */
+            --perspective: 1200px;
+            perspective: var(--perspective);
+        }
+
+        /* 
+           THE ARTIFACT 
+           Demonstrates:
+           1. --radius (v0.5.0 Percentage Support)
+           2. --rotate-z (Physics Layer)
+           3. --hue (Color Layer)
+        */
+        .chronos-core {
+            position: relative;
+            
+            /* GEOMETRY: 40% of the viewport min-dimension */
+            --width: 40vmin;
+            --height: 40vmin;
+            
+            /* v0.5.0 PROOF: 
+               Animating radius from 0px (Square) to 50% (Circle).
+               This would fail in v0.4.0. 
+            */
+            --radius: calc(var(--progress) * 50%);
+            
+            /* COLOR LOGIC */
+            --hue: calc(280 - (var(--progress) * 240));
+            --glow: calc(var(--progress) * 80px);
+            
+            /* PHYSICS LOGIC */
+            --rotate-z: calc(var(--progress) * 180deg);
+            --z: calc(var(--progress) * 200px); /* Moves closer to camera */
+
+            /* APPLY THE ENGINE VARS */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            background: white;
+            
+            /* HSL Engine allows complex composed shadows */
+            box-shadow: 
+                0 0 var(--glow) white,
+                0 0 calc(var(--glow) * 2) hsl(var(--hue) 100% 50% / 0.5);
+            
+            /* HSL Engine allows strict 3D transforms */
+            transform: 
+                translateZ(var(--z)) 
+                rotateZ(var(--rotate-z));
+            
+            /* INTERPOLATION SETTINGS */
+            /* We tell the browser strictly how to handle these types */
+            transition: 
+                --radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                --hue 0.4s ease,
+                --z 0.8s ease,
+                --rotate-z 1s ease;
+        }
+
+        /* TEXTURE OVERLAY (Standard CSS, non-Houdini) */
+        .chronos-core::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit; /* Inherits the morphing radius */
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.2;
+            mix-blend-mode: overlay;
+        }
+
+        /* 
+           TYPOGRAPHY LAYER 
+           Demonstrates variable fonts driven by Houdini
+        */
+        .temporal-label {
+            position: absolute;
+            bottom: 15%;
+            left: 10%;
+            
+            /* LAYER 5: VOICE */
+            /* Weight goes from 100 (Thin) to 900 (Black) */
+            --font-weight: calc(100 + (var(--progress) * 800));
+            
+            /* Spacing tightens as it gets heavier */
+            --letter-space: calc(20px - (var(--progress) * 15px));
+            
+            font-size: 8vw;
+            font-weight: var(--font-weight);
+            letter-spacing: var(--letter-space);
+            text-transform: uppercase;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            
+            transition: --font-weight 0.4s ease, --letter-space 0.6s ease;
+        }
+
+        .data-stream {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            font-family: monospace;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            line-height: 2;
+        }
+
+        /* UI CONTROLS */
+        .controls {
+            height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            max-width: 600px;
+            cursor: pointer;
+        }
+
+        .tick {
+            font-size: 10px;
+            letter-spacing: 2px;
+            opacity: 0.5;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="viewport">
+        <div class="data-stream">
+            PHASE: <span id="phase-label">STASIS</span><br>
+            INPUT_VAR: --progress<br>
+            GEO_TYPE: <span id="geo-label">RECT</span>
+        </div>
+        
+        <div class="chronos-core"></div>
+        
+        <div class="temporal-label">
+            Shift
+        </div>
+    </div>
+
+    <div class="controls">
+        <span class="tick">0.0</span>
+        <!-- 
+            INPUT LAYER:
+            We map the slider directly to the Global --progress variable.
+            The HSL Engine handles the distribution to all other layers.
+        -->
+        <input type="range" min="0" max="1" step="0.001" value="0" id="driver">
+        <span class="tick">1.0</span>
+    </div>
+
+    <script>
+        const driver = document.getElementById('driver');
+        const root = document.documentElement;
+        const phaseLabel = document.getElementById('phase-label');
+        const geoLabel = document.getElementById('geo-label');
+        const labelText = document.querySelector('.temporal-label');
+
+        driver.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            
+            // 1. Update the Engine
+            root.style.setProperty('--progress', val);
+
+            // 2. Update the Meta-Data (UI Text)
+            if (val < 0.3) {
+                phaseLabel.textContent = "STASIS";
+                geoLabel.textContent = "POLY_SQR";
+                labelText.textContent = "DUSK";
+            } else if (val < 0.7) {
+                phaseLabel.textContent = "TRANSITION";
+                geoLabel.textContent = "MORPH_SUBD";
+                labelText.textContent = "SHIFT";
+            } else {
+                phaseLabel.textContent = "PEAK_FLUX";
+                geoLabel.textContent = "PRIM_CIRC";
+                labelText.textContent = "DAWN";
+            }
+        });
+    </script>
+</body>
+</html>
+````
+
+### **FILE:** `05-reactive-timeline.3.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL v0.5.0 | Temporal Displacement</title>
+    
+    <!-- 
+       CRITICAL: We import the engine to prove the library works.
+       Your Sys Prompt's design is preserved below.
+    -->
+    <link rel="stylesheet" href="../houdini.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* SCENE LOGIC */
+            --bg-hue: calc(260 - (var(--progress) * 240)); 
+            --bg-lit: calc(5% + (var(--progress) * 15%));
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: hsl(var(--bg-hue) 30% var(--bg-lit));
+            color: white;
+            font-family: "Syncopate", sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.1s linear;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            --perspective: 1200px;
+            perspective: var(--perspective);
+        }
+
+        /* THE ARTIFACT */
+        .chronos-core {
+            position: relative;
+            --width: 40vmin;
+            --height: 40vmin;
+            
+            /* v0.5.0 PROOF: Morphing Square (0px) to Circle (50%) */
+            --radius: calc(var(--progress) * 50%);
+            
+            /* Motion & Color */
+            --hue: calc(280 - (var(--progress) * 240));
+            --glow: calc(var(--progress) * 80px);
+            --rotate-z: calc(var(--progress) * 180deg);
+            --z: calc(var(--progress) * 200px);
+
+            /* HSL Engine Application */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            background: white;
+            
+            box-shadow: 
+                0 0 var(--glow) white,
+                0 0 calc(var(--glow) * 2) hsl(var(--hue) 100% 50% / 0.5);
+            
+            transform: translateZ(var(--z)) rotateZ(var(--rotate-z));
+            
+            transition: 
+                --radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                --hue 0.4s ease,
+                --z 0.8s ease,
+                --rotate-z 1s ease;
+        }
+
+        /* Native Nesting works perfectly in 2026 */
+        .chronos-core::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.2;
+            mix-blend-mode: overlay;
+        }
+
+        /* TYPOGRAPHY */
+        .temporal-label {
+            position: absolute;
+            bottom: 15%;
+            left: 10%;
+            --font-weight: calc(100 + (var(--progress) * 800));
+            --letter-space: calc(20px - (var(--progress) * 15px));
+            
+            font-size: 8vw;
+            font-weight: var(--font-weight);
+            letter-spacing: var(--letter-space);
+            text-transform: uppercase;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            transition: --font-weight 0.4s ease, --letter-space 0.6s ease;
+        }
+
+        .data-stream {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            font-family: monospace;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            line-height: 2;
+        }
+
+        /* CONTROLS */
+        .controls {
+            height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            max-width: 600px;
+            cursor: pointer;
+        }
+
+        .tick { font-size: 10px; letter-spacing: 2px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <div class="viewport">
+        <div class="data-stream">
+            PHASE: <span id="phase-label">STASIS</span><br>
+            INPUT_VAR: --progress<br>
+            GEO_TYPE: <span id="geo-label">RECT</span>
+        </div>
+        <div class="chronos-core"></div>
+        <div class="temporal-label">Shift</div>
+    </div>
+
+    <div class="controls">
+        <span class="tick">0.0</span>
+        <input type="range" min="0" max="1" step="0.001" value="0" id="driver">
+        <span class="tick">1.0</span>
+    </div>
+
+    <script>
+        const driver = document.getElementById('driver');
+        const root = document.documentElement;
+        const phaseLabel = document.getElementById('phase-label');
+        const geoLabel = document.getElementById('geo-label');
+        const labelText = document.querySelector('.temporal-label');
+
+        driver.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            root.style.setProperty('--progress', val);
+
+            if (val < 0.3) {
+                phaseLabel.textContent = "STASIS";
+                geoLabel.textContent = "POLY_SQR";
+                labelText.textContent = "DUSK";
+            } else if (val < 0.7) {
+                phaseLabel.textContent = "TRANSITION";
+                geoLabel.textContent = "MORPH_SUBD";
+                labelText.textContent = "SHIFT";
+            } else {
+                phaseLabel.textContent = "PEAK_FLUX";
+                geoLabel.textContent = "PRIM_CIRC";
+                labelText.textContent = "DAWN";
+            }
+        });
+    </script>
+</body>
+</html>
+````
+
+### **FILE:** `05-reactive-timeline.4.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL v0.5.0 | Temporal Displacement</title>
+    
+    <!-- 
+       CRITICAL ARCHITECTURE NOTE:
+       We import the engine to prove the library works.
+       We do NOT define @property here; we trust houdini.css to do it.
+    -->
+    <link rel="stylesheet" href="../houdini.css">
+    
+    <!-- Design Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* SCENE LOGIC: Mapping global inputs to local aesthetic vars */
+            --bg-hue: calc(260 - (var(--progress) * 240)); 
+            --bg-lit: calc(5% + (var(--progress) * 15%));
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: hsl(var(--bg-hue) 30% var(--bg-lit));
+            color: white;
+            font-family: "Syncopate", sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.1s linear;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* LAYER 6: PERSPECTIVE (Engine Primitive) */
+            --perspective: 1200px;
+            perspective: var(--perspective);
+        }
+
+        /* THE ARTIFACT */
+        .chronos-core {
+            position: relative;
+            --width: 40vmin;
+            --height: 40vmin;
+            
+            /* v0.5.0 PROOF: Morphing Square (0px) to Circle (50%) */
+            /* This works because Layer 6 now accepts <length-percentage> */
+            --radius: calc(var(--progress) * 50%);
+            
+            /* LAYER 2 & 3: Motion & Color inputs */
+            --hue: calc(280 - (var(--progress) * 240));
+            --glow: calc(var(--progress) * 80px);
+            --rotate-z: calc(var(--progress) * 180deg);
+            --z: calc(var(--progress) * 200px);
+
+            /* HSL ENGINE APPLICATION */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            background: white;
+            
+            /* Complex composed shadows using Engine vars */
+            box-shadow: 
+                0 0 var(--glow) white,
+                0 0 calc(var(--glow) * 2) hsl(var(--hue) 100% 50% / 0.5);
+            
+            /* Strict 3D transforms */
+            transform: translateZ(var(--z)) rotateZ(var(--rotate-z));
+            
+            /* Smooth Interpolation */
+            transition: 
+                --radius 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                --hue 0.4s ease,
+                --z 0.8s ease,
+                --rotate-z 1s ease;
+        }
+
+        /* Texture Overlay */
+        .chronos-core::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.9;
+            mix-blend-mode: overlay;
+        }
+
+        /* TYPOGRAPHY LAYER (Variable Fonts + Engine) */
+        .temporal-label {
+            position: absolute;
+            bottom: 15%;
+            left: 10%;
+            --font-weight: calc(100 + (var(--progress) * 800));
+            --letter-space: calc(20px - (var(--progress) * 15px));
+            
+            font-size: 8vw;
+            font-weight: var(--font-weight);
+            letter-spacing: var(--letter-space);
+            text-transform: uppercase;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            transition: --font-weight 0.4s ease, --letter-space 0.6s ease;
+        }
+
+        .data-stream {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            font-family: monospace;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            line-height: 2;
+        }
+
+        /* CONTROLS UI */
+        .controls {
+            height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 40px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            max-width: 600px;
+            cursor: pointer;
+        }
+
+        .tick { font-size: 10px; letter-spacing: 2px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <div class="viewport">
+        <div class="data-stream">
+            PHASE: <span id="phase-label">STASIS</span><br>
+            INPUT_VAR: --progress<br>
+            GEO_TYPE: <span id="geo-label">RECT</span>
+        </div>
+        <div class="chronos-core"></div>
+        <div class="temporal-label">Shift</div>
+    </div>
+
+    <div class="controls">
+        <span class="tick">0.0</span>
+        <input type="range" min="0" max="1" step="0.001" value="0" id="driver">
+        <span class="tick">1.0</span>
+    </div>
+
+    <script>
+        const driver = document.getElementById('driver');
+        const root = document.documentElement;
+        const phaseLabel = document.getElementById('phase-label');
+        const geoLabel = document.getElementById('geo-label');
+        const labelText = document.querySelector('.temporal-label');
+
+        driver.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            root.style.setProperty('--progress', val);
+
+            if (val < 0.3) {
+                phaseLabel.textContent = "STASIS";
+                geoLabel.textContent = "POLY_SQR";
+                labelText.textContent = "DUSK";
+            } else if (val < 0.7) {
+                phaseLabel.textContent = "TRANSITION";
+                geoLabel.textContent = "MORPH_SUBD";
+                labelText.textContent = "SHIFT";
+            } else {
+                phaseLabel.textContent = "PEAK_FLUX";
+                geoLabel.textContent = "PRIM_CIRC";
+                labelText.textContent = "DAWN";
+            }
+        });
+    </script>
+</body>
+</html>
+````
+
+### **FILE:** `05-reactive-timeline.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 05: Reactive Timeline</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+            
+            /* 
+               SCENE ORCHESTRATION 
+               We map the single --progress (0.0 to 1.0) input 
+               to various aesthetic outputs using calc().
+            */
+            
+            /* 1. Sky Color Logic */
+            --sky-hue: 200; /* Blue base */
+            --sky-lightness: calc(10% + (var(--progress) * 50%)); /* Dark to Day */
+            background: hsl(var(--sky-hue) 60% var(--sky-lightness));
+            
+            /* 2. Global Text Color Logic */
+            color: hsl(var(--sky-hue) 10% calc(100% - (var(--progress) * 20%)));
+            
+            transition: background 0.1s linear, color 0.1s linear;
+        }
+
+        .scene {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* THE SUN */
+        .sun {
+            /* Geometry */
+            --width: 150px;
+            --height: 150px;
+            --radius: 75px; /* Half of the 150px width. 50% is invalid for <length> type. */
+            
+            /* Motion Logic: Moves from bottom (100vh) to top */
+            --y: calc(50vh - (var(--progress) * 80vh));
+            
+            /* Color Logic: Red (0) -> Yellow (60) */
+            --hue: calc(0 + (var(--progress) * 60)); 
+            
+            /* FX Logic: Glow intensity increases with height */
+            --glow: calc(10px + (var(--progress) * 50px));
+            
+            /* Construct the element */
+            width: var(--width);
+            height: var(--height);
+            border-radius: var(--radius);
+            
+            /* Use HSL Engine to render */
+            background: hsl(var(--hue) 100% 60%);
+            box-shadow: 0 0 var(--glow) var(--glow) hsl(var(--hue) 100% 60% / 0.5);
+            transform: translate3d(0, var(--y), -200px);
+            
+            /* Smooth it out */
+            transition: --y 0.1s linear, --hue 0.1s linear, --glow 0.1s linear;
+        }
+
+        /* THE CARD */
+        .card {
+            position: absolute;
+            
+            /* Motion Logic: Rotates based on progress */
+            --rotate-x: calc(20deg - (var(--progress) * 20deg)); /* Tilts up */
+            --z: calc(0px + (var(--progress) * 100px)); /* Moves closer */
+            
+            /* FX Logic: Shadow gets tighter as sun rises */
+            --shadow-y: calc(50px - (var(--progress) * 40px));
+            --shadow-alpha: calc(0.5 - (var(--progress) * 0.2));
+            
+            /* Styling */
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            
+            /* Engine Assembly */
+            transform: 
+                perspective(1000px)
+                translate3d(0, 0, var(--z))
+                rotateX(var(--rotate-x));
+            
+            box-shadow: 
+                0 var(--shadow-y) 50px -10px 
+                rgba(0,0,0, var(--shadow-alpha));
+                
+            transition: --rotate-x 0.1s, --z 0.1s, --shadow-y 0.1s, --shadow-alpha 0.1s;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            /* Typography Logic: Spacing increases */
+            letter-spacing: calc(0px + (var(--progress) * 10px));
+            transition: letter-spacing 0.2s;
+        }
+
+        /* CONTROLS */
+        .controls {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        input[type="range"] {
+            width: 300px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 
+       LAYER 1: SYSTEM INPUT
+       We use a tiny bit of JS to bridge the Slider to the CSS Variable.
+       This simulates a ScrollObserver or backend state.
+    -->
+    <div class="scene" style="--progress: 0.5">
+        <div class="sun"></div>
+        <div class="card">
+            <h1>MORNING</h1>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label>SYSTEM INPUT: --progress</label>
+        <input type="range" min="0" max="1" step="0.01" value="0.5" 
+               oninput="document.querySelector('.scene').style.setProperty('--progress', this.value); document.body.style.setProperty('--progress', this.value)">
+    </div>
+
+</body>
+</html>
+````
+
+### **FILE:** `06-time-and-origin.html`
+````
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 06: Time & Origin (v0.5.0)</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #222;
+            color: white;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 
+           THE METRONOME 
+           Demonstrates:
+           1. --origin (Pivot control)
+           2. --duration (Time control)
+           3. --radius (Percentage geometry)
+        */
+        .metronome {
+            position: relative;
+            
+            /* 1. GEOMETRY: The rod */
+            --width: 10px;
+            --height: 300px;
+            
+            /* 2. PIVOT POINT (The New v0.5.0 Feature) */
+            /* We want it to swing from the BOTTOM center */
+            /* Remember: Keywords like 'bottom' are illegal. Use 100%. */
+            --origin-x: 50%;
+            --origin-y: 100%;
+            
+            /* 3. TIME CONTROL (The New v0.5.0 Feature) */
+            /* Default beat: 1 second per swing */
+            --duration: 1s; 
+            
+            /* Animation Setup */
+            /* We animate the rotation from -45deg to 45deg */
+            animation: tick-tock var(--duration) ease-in-out infinite alternate;
+            
+            /* Construct the Rod */
+            width: var(--width);
+            height: var(--height);
+            background: #444;
+            border-radius: 4px;
+            
+            /* Apply the Physics Engine */
+            transform-origin: var(--origin-x) var(--origin-y);
+        }
+
+        /* The Bob (Weight) */
+        .bob {
+            position: absolute;
+            top: 0; 
+            left: 50%;
+            
+            /* GEOMETRY FIX VERIFICATION */
+            /* In v0.4.0, this would break. In v0.5.0, it makes a circle. */
+            --radius: 50%; 
+            --size: 60px;
+            
+            width: var(--size);
+            height: var(--size);
+            border-radius: var(--radius);
+            
+            /* Centering the bob on the rod tip */
+            translate: -50% -50%;
+            
+            /* Styling */
+            background: white;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        @keyframes tick-tock {
+            from { rotate: -30deg; }
+            to   { rotate: 30deg; }
+        }
+
+        /* CONTROLS UI */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="range"] {
+            width: 200px;
+            accent-color: white;
+        }
+
+        .readout {
+            font-family: monospace;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="metronome" id="device">
+        <div class="bob"></div>
+    </div>
+
+    <div class="controls">
+        <label>TEMPO (--duration)</label>
+        
+        <!-- 
+           JS BRIDGE:
+           We simply map the input range (0.2 to 2.0) directly into the --duration variable.
+           Because we typed it as <time>, we must append 's' in the JS string.
+        -->
+        <input type="range" min="0.2" max="2.0" step="0.1" value="1.0" 
+               oninput="updateTempo(this.value)">
+        
+        <div class="readout">1.0s</div>
+    </div>
+
+    <script>
+        function updateTempo(val) {
+            const device = document.getElementById('device');
+            const label = document.querySelector('.readout');
+            
+            // CRITICAL: We must include the unit 's' because 
+            // the variable is strictly typed as <time>.
+            device.style.setProperty('--duration', val + 's');
+            
+            label.textContent = val + 's';
+        }
+    </script>
+
+</body>
+</html>
+````
+
+### **FILE:** `README.md`
+````
+# HSL Examples (v0.5.0)
+
+This directory contains reference implementations of the **Houdini Standard Library**. 
+Each example targets specific layers of the engine to verify browser support and syntax strictness.
+
+### 01. Interpolated Gradient (`01-interpolated-gradient.html`)
+**Target:** Layer 2 (Color)
+**Concept:** Type Mixing
+Demonstrates the engine's ability to interpolate two different variable types simultaneously inside a gradient:
+*   `--hue-rotate` (`<angle>`) for direction.
+*   `--hue` (`<number>`) for color palette shifting.
+
+### 02. Integer Counter (`02-integer-counter.html`)
+**Target:** Layer 5 (Typography/Voice)
+**Concept:** Integer Interpolation
+Uses `transition` on a strictly typed `<integer>` variable.
+*   Bridges CSS variables to CSS Counters (`content: counter(num)`).
+*   Proves that the browser rounds values automatically during animation.
+
+### 03. Physics Button (`03-physics-button.html`)
+**Target:** Layer 3 (Physics)
+**Concept:** Reactive UI & Composition
+A "Physics Rig" that separates inputs from outputs.
+*   Button interactions do not touch `transform`.
+*   They update `--scale`, `--y`, and `--rotate-z` independently.
+*   The engine composites these into a single 3D matrix.
+
+### 04. Pure Houdini (`04-pure-houdini.html`)
+**Target:** Layer 1 (Inputs)
+**Concept:** Logic & Calculus
+A logic-heavy demo with zero JavaScript logic.
+*   JS only provides raw mouse coordinates (0.0 - 1.0).
+*   CSS handles all `calc()` math for 3D tilt and glare positioning.
+*   *Refactored in v0.5.0 to use standard `--scalar-x` inputs.*
+
+### 05. Reactive Timeline (`05-reactive-timeline.html`)
+**Target:** Layer 6 (Shape)
+**Concept:** Timeline Mapping
+Maps a single variable (`--progress`) to an entire scene.
+*   Demonstrates how to drive geometry, color, and position from one slider.
+*   *Verified v0.5.0 patch:* `--radius` now supports percentages (e.g., sun geometry).
+
+### 06. Metronome (`06-time-and-origin.html`)
+**Target:** Layer 7 (Time) & Layer 8 (Anchor)
+**Concept:** The v0.5.0 Feature Set
+Specifically designed to test the newest primitives.
+*   **Time:** Uses `<time>` typed variables (`--duration`) to control animation speed dynamically.
+*   **Anchor:** Uses `<length-percentage>` (`--origin-y`) to move the pivot point for pendulum physics.
+````
+

@@ -1,4 +1,4 @@
-# 📘 HOUDINI STANDARD LIBRARY — v0.4.0 REFERENCE
+# 📘 HOUDINI STANDARD LIBRARY — v0.5.0 REFERENCE
 
 **Official Documentation Sheet**
 *Organized by Layer, Purpose, and Recommended Usage.*
@@ -108,14 +108,41 @@
 **("The Shape Layer")**
 *Controls box geometry. Inherited unless unsafe.*
 
-| Variable | Purpose |
-| :--- | :--- |
-| `--radius` | Border radius |
-| `--padding` | Internal spacing |
-| `--gap` | Child spacing |
-| `--columns` | Grid column count |
-| `--perspective` | 3D depth |
-| `--width` / `--height` | Explicit dimensions (Non-inheriting) |
+| Variable | Type | Purpose |
+| :--- | :--- | :--- |
+| `--radius` | `<length-percentage>` | Border radius (Supports %) |
+| `--padding` | `<length>` | Internal spacing |
+| `--gap` | `<length>` | Child spacing |
+| `--columns` | `<integer>` | Grid column count |
+| `--perspective` | `<length>` | 3D depth |
+| `--width/height` | `<length>` | Explicit dimensions (Non-inheriting) |
+
+---
+
+## LAYER 7 — TEMPORAL SYSTEM
+**("The Time Layer")**
+*Controls duration and pacing. Non-Inheriting.*
+
+| Variable | Type | Purpose |
+| :--- | :--- | :--- |
+| `--duration` | `<time>` | Animation duration (e.g., 1s, 500ms) |
+| `--delay` | `<time>` | Animation delay |
+
+**Usage Note:** Must be used with valid time units (`s`, `ms`). Integers (`100`) are invalid.
+
+---
+
+## LAYER 8 — ANCHOR / PIVOT
+**("The Origin Layer")**
+*Controls the transform origin. Non-Inheriting.*
+
+| Variable | Type | Purpose |
+| :--- | :--- | :--- |
+| `--origin-x` | `<length-percentage>` | X Pivot (0% = Left, 100% = Right) |
+| `--origin-y` | `<length-percentage>` | Y Pivot (0% = Top, 100% = Bottom) |
+| `--origin-z` | `<length>` | Z Pivot (Depth) |
+
+**Usage Note:** Strict typing disables keywords. Use `50%` instead of `center`.
 
 ---
 
@@ -126,5 +153,6 @@
 2.  **Motion Layer** builds the **Transform**.
 3.  **Color + FX Layers** produce the **Visual State**.
 4.  **Geometry Layer** defines the **Container**.
+5.  **Temporal Layer** defines the **Speed**.
 
 Together, these layers behave like a **CSS shader pipeline**, enabling procedural UI without JavaScript overhead.

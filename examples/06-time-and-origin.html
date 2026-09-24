@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSL Ex 06: Time & Origin (v0.5.0)</title>
+    <link rel="stylesheet" href="../houdini.css">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #222;
+            color: white;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 
+           THE METRONOME 
+           Demonstrates:
+           1. --origin (Pivot control)
+           2. --duration (Time control)
+           3. --radius (Percentage geometry)
+        */
+        .metronome {
+            position: relative;
+            
+            /* 1. GEOMETRY: The rod */
+            --width: 10px;
+            --height: 300px;
+            
+            /* 2. PIVOT POINT (The New v0.5.0 Feature) */
+            /* We want it to swing from the BOTTOM center */
+            /* Remember: Keywords like 'bottom' are illegal. Use 100%. */
+            --origin-x: 50%;
+            --origin-y: 100%;
+            
+            /* 3. TIME CONTROL (The New v0.5.0 Feature) */
+            /* Default beat: 1 second per swing */
+            --duration: 1s; 
+            
+            /* Animation Setup */
+            /* We animate the rotation from -45deg to 45deg */
+            animation: tick-tock var(--duration) ease-in-out infinite alternate;
+            
+            /* Construct the Rod */
+            width: var(--width);
+            height: var(--height);
+            background: #444;
+            border-radius: 4px;
+            
+            /* Apply the Physics Engine */
+            transform-origin: var(--origin-x) var(--origin-y);
+        }
+
+        /* The Bob (Weight) */
+        .bob {
+            position: absolute;
+            top: 0; 
+            left: 50%;
+            
+            /* GEOMETRY FIX VERIFICATION */
+            /* In v0.4.0, this would break. In v0.5.0, it makes a circle. */
+            --radius: 50%; 
+            --size: 60px;
+            
+            width: var(--size);
+            height: var(--size);
+            border-radius: var(--radius);
+            
+            /* Centering the bob on the rod tip */
+            translate: -50% -50%;
+            
+            /* Styling */
+            background: white;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        @keyframes tick-tock {
+            from { rotate: -30deg; }
+            to   { rotate: 30deg; }
+        }
+
+        /* CONTROLS UI */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="range"] {
+            width: 200px;
+            accent-color: white;
+        }
+
+        .readout {
+            font-family: monospace;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="metronome" id="device">
+        <div class="bob"></div>
+    </div>
+
+    <div class="controls">
+        <label>TEMPO (--duration)</label>
+        
+        <!-- 
+           JS BRIDGE:
+           We simply map the input range (0.2 to 2.0) directly into the --duration variable.
+           Because we typed it as <time>, we must append 's' in the JS string.
+        -->
+        <input type="range" min="0.2" max="2.0" step="0.1" value="1.0" 
+               oninput="updateTempo(this.value)">
+        
+        <div class="readout">1.0s</div>
+    </div>
+
+    <script>
+        function updateTempo(val) {
+            const device = document.getElementById('device');
+            const label = document.querySelector('.readout');
+            
+            // CRITICAL: We must include the unit 's' because 
+            // the variable is strictly typed as <time>.
+            device.style.setProperty('--duration', val + 's');
+            
+            label.textContent = val + 's';
+        }
+    </script>
+
+</body>
+</html>

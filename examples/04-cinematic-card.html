@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HSL Ex 04: Pure Houdini (Refactored)</title>
+
+  <!-- 1. IMPORT THE ENGINE (Instead of defining props manually) -->
+  <link rel="stylesheet" href="../houdini.css">
+
+  <style>
+    /* 
+       HSL v0.5.0 MAPPING:
+       --scalar-x  = Mouse X (0.0 - 1.0)
+       --scalar-y  = Mouse Y (0.0 - 1.0)
+       --scalar    = Active State (0.0 - 1.0)
+    */
+
+    :root {
+      --bg: #d0021b;
+      
+      /* THE LOGIC ENGINE: All math performed inside CSS using HSL primitives */
+      /* Note: We use --scalar (the hover state) to multiply the tilt intensity */
+      /* MOVED TO .card for encapsulation? 
+      --tilt-x: calc((var(--scalar-y) - 0.5) * -30deg * var(--scalar));
+      --tilt-y: calc((var(--scalar-x) - 0.5) * 30deg * var(--scalar));
+      */
+
+      --glare-x: calc(var(--scalar-x) * 100%);
+      --glare-y: calc(var(--scalar-y) * 100%);
+
+      /* Initialize defaults to center */
+      --scalar-x: 0.5;
+      --scalar-y: 0.5;
+      --scalar: 0;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh; /* changed from 100dvh for broader 2026 compat */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(circle at 20% 20%, #ffeb3b 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, #ff5722 0%, transparent 40%);
+      background-attachment: fixed;
+      font-family: system-ui, sans-serif;
+      overflow: hidden; 
+    }
+
+    .card {
+      width: clamp(280px, 85vw, 400px);
+      aspect-ratio: 5/7;
+      max-height: 80vh;
+      
+      background: rgba(15, 20, 30, 0.75);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      
+      /* THE OUTPUT: Driven by calculated Logic vars */
+      transform: 
+        perspective(1000px)
+        rotateX(var(--tilt-x)) 
+        rotateY(var(--tilt-y))
+        scale(calc(1 + (var(--scalar) * 0.05))); /* Subtle zoom on hover */
+
+      /* THE SECRET SAUCE: Native HSL property interpolation */
+      /* We transition the Input Variables, not the transform! */
+      transition: 
+        --scalar-x 0.1s linear, 
+        --scalar-y 0.1s linear, 
+        --scalar 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      
+      position: relative;
+      cursor: none;
+      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+    }
+.card {
+  --tilt-x: calc((var(--scalar-y) - 0.5) * -30deg * var(--scalar));
+  --tilt-y: calc((var(--scalar-x) - 0.5) * 30deg * var(--scalar));
+}
+    /* Hover State triggers the "active" scalar */
+    .card:hover { --scalar: 1; }
+
+    /* THE GLARE */
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        circle at var(--glare-x) var(--glare-y),
+        rgba(255, 255, 255, calc(var(--scalar) * 0.3)),
+        transparent 60%
+      );
+      pointer-events: none;
+    }
+
+    .content {
+      padding: 2.5rem;
+      color: white;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+
+    h2 { font-size: 3rem; margin: 0; font-weight: 900; line-height: 1; }
+    p { opacity: 0.8; line-height: 1.5; font-size: 1.1rem; }
+    code { font-size: 0.7rem; opacity: 0.4; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="card">
+    <div class="content">
+      <div>
+        <h2>PURE<br>HOUDINI</h2>
+        <p>Example 04: The Vivid Sovereign.<br>Refactored for HSL v0.5.0</p>
+      </div>
+      <code>HSL_v0.5.0 // LIBRARY_INTEGRATED</code>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * THE HSL BRIDGE
+     * We map mouse coordinates to the library's standardized scalar inputs.
+     */
+    document.addEventListener('pointermove', e => {
+      // Normalize to 0.0 - 1.0
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+
+      // Update the Standard Library Variables
+      document.documentElement.style.setProperty('--scalar-x', x);
+      document.documentElement.style.setProperty('--scalar-y', y);
+    });
+  </script>
+
+</body>
+</html>
