@@ -14,8 +14,11 @@
    - Variables typed as '<angle>' must contain units (deg, rad).
    - Variables typed as '<length>' must be absolute (px, rem) unless context allows.
    
-   Inheritance is explicitly disabled on Physics layers (Layer 3 & 4)
-   to prevent recursive transformation compounding in the DOM tree.
+   Inheritance is explicitly disabled on the Physics layer (Section 3) and FX layer (Section 4)
+   so per-element physics state never leaks to descendants, and
+   calc-redefinition chains (e.g. --x: calc(var(--x) + 10px)) cannot
+   silently accumulate down the tree. (Note: inheriting a var does not
+   compound transforms; an inherited translate value merely repeats.)
 */
 
 /* ========================================================================== */
@@ -103,7 +106,7 @@
 @property --shadow-alpha    { syntax: '<number>';             initial-value: 0;   inherits: false; }
 
 /* Glow (thematic, so it inherits) */
-@property --glow            { syntax: '<number>';             initial-value: 0;   inherits: true; }
+@property --glow            { syntax: '<length>';             initial-value: 0px; inherits: true; }
 
 
 /* ========================================================================== */

@@ -25,7 +25,7 @@ A "Physics Rig" that separates inputs from outputs.
 *   They update `--scale`, `--y`, and `--rotate-z` independently.
 *   The engine composites these into a single 3D matrix.
 
-### 04. Pure Houdini (`04-pure-houdini.html`)
+### 04. Cinematic Card (`04-cinematic-card.html`)
 **Target:** Layer 1 (Inputs)
 **Concept:** Logic & Calculus
 A logic-heavy demo with zero JavaScript logic.
